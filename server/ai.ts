@@ -1,0 +1,193 @@
+import { User } from "@shared/schema";
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
+
+export interface MatchRecommendation {
+  userId: number;
+  displayName: string;
+  profilePic?: string;
+  matchScore: number;
+  sharedInterests: string[];
+  memberSince: string; // ISO date string
+}
+
+class AIService {
+  private model: GenerativeModel | null = null;
+
+  initialize(genAI: GoogleGenerativeAI) {
+    try {
+      // Initialize the model
+      this.model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      console.log("Gemini AI model initialized successfully");
+    } catch (error) {
+      console.error("Failed to initialize Gemini AI model:", error);
+      this.model = null;
+    }
+  }
+
+  async findMatches(
+    user: User,
+    potentialMatches: User[],
+    filterInterests: string[] = []
+  ): Promise<MatchRecommendation[]> {
+    if (!this.model) {
+      console.warn("AI model not initialized, using fallback match algorithm");
+      return this.fallbackMatchAlgorithm(user, potentialMatches, filterInterests);
+    }
+
+    try {
+      // Filter potential matches if specific interests are provided
+      let filteredMatches = potentialMatches;
+      if (filterInterests.length > 0) {
+        filteredMatches = potentialMatches.filter(match => {
+          if (!match.interests) return false;
+          return filterInterests.some(interest => 
+            match.interests && match.interests.includes(interest)
+          );
+        });
+      }
+
+      // If no matches left after filtering, return empty array
+      if (filteredMatches.length === 0) {
+        return [];
+      }
+
+      // Prepare data for AI analysis
+      const userProfile = {
+        goals: user.goals || [],
+        interests: user.interests || [],
+        experiences: user.experiences || []
+      };
+
+      const potentialMatchesProfiles = filteredMatches.map(match => ({
+        id: match.id,
+        displayName: match.displayName,
+        goals: match.goals || [],
+        interests: match.interests || [],
+        experiences: match.experiences || [],
+        profilePic: match.profilePic,
+        createdAt: match.createdAt?.toISOString()
+      }));
+
+      // Craft prompt for the AI
+      const prompt = `
+        I need to find the best support matches for a user based on complementary experiences and shared goals.
+        
+        Here is the user's profile data:
+        ${JSON.stringify(userProfile, null, 2)}
+        
+        Here are the potential matches:
+        ${JSON.stringify(potentialMatchesProfiles, null, 2)}
+        
+        For each potential match, analyze:
+        1. Goal alignment (are they trying to achieve similar things?)
+        2. Complementary experiences (does one person have experience that could help the other?)
+        3. Shared interests
+        
+        Calculate a match score (0-100) for each potential match.
+        
+        Return a JSON array with the following structure for each match:
+        [{
+          "userId": number,
+          "matchScore": number,
+          "sharedInterests": string[]
+        }]
+        
+        Sort by match score from highest to lowest, and return only matches with a score above 50.
+      `;
+
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Extract the JSON array from the response
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error("Failed to parse AI response");
+      }
+
+      const aiRecommendations = JSON.parse(jsonMatch[0]);
+
+      // Format and return results
+      return aiRecommendations.map((rec: any) => {
+        const match = filteredMatches.find(m => m.id === rec.userId);
+        if (!match) return null;
+
+        return {
+          userId: match.id,
+          displayName: match.displayName,
+          profilePic: match.profilePic,
+          matchScore: rec.matchScore,
+          sharedInterests: rec.sharedInterests || [],
+          memberSince: match.createdAt ? match.createdAt.toISOString().split('T')[0] : 'recent'
+        };
+      }).filter(Boolean);
+    } catch (error) {
+      console.error("AI matching error:", error);
+      return this.fallbackMatchAlgorithm(user, potentialMatches, filterInterests);
+    }
+  }
+
+  // Fallback algorithm when AI is not available
+  private fallbackMatchAlgorithm(
+    user: User,
+    potentialMatches: User[],
+    filterInterests: string[] = []
+  ): MatchRecommendation[] {
+    // Filter by interests if specified
+    let filteredMatches = potentialMatches;
+    if (filterInterests.length > 0) {
+      filteredMatches = potentialMatches.filter(match => {
+        if (!match.interests) return false;
+        return filterInterests.some(interest => 
+          match.interests && match.interests.includes(interest)
+        );
+      });
+    }
+
+    // Calculate match scores
+    const recommendations = filteredMatches.map(match => {
+      // Count shared interests
+      const userInterests = user.interests || [];
+      const matchInterests = match.interests || [];
+      const sharedInterests = userInterests.filter(interest => 
+        matchInterests.includes(interest)
+      );
+
+      // Count shared goals
+      const userGoals = user.goals || [];
+      const matchGoals = match.goals || [];
+      const sharedGoals = userGoals.filter(goal => 
+        matchGoals.includes(goal)
+      );
+
+      // Calculate score (simple algorithm)
+      let score = 0;
+      if (userInterests.length > 0) {
+        score += (sharedInterests.length / userInterests.length) * 50;
+      }
+      if (userGoals.length > 0) {
+        score += (sharedGoals.length / userGoals.length) * 50;
+      }
+
+      // Add a small random factor (±10%)
+      const randomFactor = 0.9 + (Math.random() * 0.2);
+      score = Math.min(100, Math.round(score * randomFactor));
+
+      return {
+        userId: match.id,
+        displayName: match.displayName,
+        profilePic: match.profilePic,
+        matchScore: score,
+        sharedInterests,
+        memberSince: match.createdAt ? match.createdAt.toISOString().split('T')[0] : 'recent'
+      };
+    });
+
+    // Filter by minimum score and sort
+    return recommendations
+      .filter(rec => rec.matchScore >= 50)
+      .sort((a, b) => b.matchScore - a.matchScore);
+  }
+}
+
+export const aiService = new AIService();
