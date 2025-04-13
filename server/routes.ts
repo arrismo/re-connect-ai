@@ -155,7 +155,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/matches/find", ensureAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const interests = req.query.interests ? req.query.interests.split(',') : [];
+      const interests = req.query.interests ? decodeURIComponent(req.query.interests as string).split(',') : [];
+      if (!Array.isArray(interests)) {
+        return res.status(400).json({ message: "Invalid interests format" });
+      }
       
       // Get current user
       const user = await storage.getUser(userId);
