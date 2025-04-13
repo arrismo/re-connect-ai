@@ -4,7 +4,6 @@ import { storage } from "./storage";
 import { aiService } from "./ai";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import {
   insertUserSchema,
   insertMatchSchema,
@@ -17,20 +16,12 @@ import {
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { setupAuth } from "./auth";
 
-const JWT_SECRET = process.env.JWT_SECRET || "support-match-secret-key";
-
 // Auth middleware
-function authenticateToken(req: any, res: any, next: any) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) return res.status(401).json({ message: "Authentication required" });
-
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) return res.status(403).json({ message: "Invalid or expired token" });
-    req.user = user;
-    next();
-  });
+function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: "Authentication required" });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -48,88 +39,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ================== AUTH ROUTES ==================
   
-  // Register new user
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const userData = insertUserSchema.parse(req.body);
-      
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(userData.username);
-      if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
-      }
-      
-      // Hash password
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
-      // Create user with hashed password
-      const newUser = await storage.createUser({
-        ...userData,
-        password: hashedPassword
-      });
-      
-      // Generate token
-      const token = jwt.sign({ id: newUser.id, username: newUser.username }, JWT_SECRET, { expiresIn: '24h' });
-      
-      // Add default interests
-      const defaultInterests = [
-        "Work-Life Balance", "Mental Health", "Career Development", 
-        "Personal Growth", "Anxiety Management", "Productivity",
-        "Stress Reduction", "Leadership"
-      ];
-      
-      await Promise.all(
-        defaultInterests.map(name => 
-          storage.createInterest({ name, category: "general" })
-        )
-      );
-      
-      res.status(201).json({ 
-        user: { ...newUser, password: undefined }, 
-        token 
-      });
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
-  
-  // Login user
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const { username, password } = z.object({
-        username: z.string(),
-        password: z.string()
-      }).parse(req.body);
-      
-      // Get user
-      const user = await storage.getUserByUsername(username);
-      if (!user) {
-        return res.status(400).json({ message: "Invalid username or password" });
-      }
-      
-      // Check password
-      const validPassword = await bcrypt.compare(password, user.password);
-      if (!validPassword) {
-        return res.status(400).json({ message: "Invalid username or password" });
-      }
-      
-      // Update last active
-      await storage.updateUserLastActive(user.id);
-      
-      // Generate token
-      const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
-      
-      res.status(200).json({ 
-        user: { ...user, password: undefined }, 
-        token 
-      });
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
+  // Default interests are now created through setupAuth function
+  // Auth routes handled by the /api/register, /api/login, /api/logout, /api/user endpoints in auth.ts
   
   // Get current user
-  app.get("/api/auth/me", authenticateToken, async (req: any, res) => {
+  app.get("/api/auth/me", ensureAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user) {
@@ -145,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ================== USER ROUTES ==================
   
   // Update user profile
-  app.put("/api/users/:id", authenticateToken, async (req: any, res) => {
+  app.put("/api/users/:id", ensureAuthenticated, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.id);
       
@@ -174,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ================== MATCH ROUTES ==================
   
   // Get all matches for a user
-  app.get("/api/matches", authenticateToken, async (req: any, res) => {
+  app.get("/api/matches", ensureAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const matches = await storage.getUserMatches(userId);
@@ -207,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get a single match
-  app.get("/api/matches/:id", authenticateToken, async (req: any, res) => {
+  app.get("/api/matches/:id", ensureAuthenticated, async (req: any, res) => {
     try {
       const matchId = parseInt(req.params.id);
       const match = await storage.getMatch(matchId);
@@ -249,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Find potential matches with AI recommendation
-  app.get("/api/matches/find", authenticateToken, async (req: any, res) => {
+  app.get("/api/matches/find", ensureAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const interests = req.query.interests ? req.query.interests.split(',') : [];
@@ -291,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Request a match with another user
-  app.post("/api/matches", authenticateToken, async (req: any, res) => {
+  app.post("/api/matches", ensureAuthenticated, async (req: any, res) => {
     try {
       const { otherUserId, matchScore, matchDetails } = z.object({
         otherUserId: z.number(),
@@ -323,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Accept/Reject a match request
-  app.put("/api/matches/:id/status", authenticateToken, async (req: any, res) => {
+  app.put("/api/matches/:id/status", ensureAuthenticated, async (req: any, res) => {
     try {
       const matchId = parseInt(req.params.id);
       const { status } = z.object({
@@ -377,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ================== CHALLENGE ROUTES ==================
   
   // Get all challenges for a user
-  app.get("/api/challenges", authenticateToken, async (req: any, res) => {
+  app.get("/api/challenges", ensureAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       
@@ -429,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create a new challenge
-  app.post("/api/challenges", authenticateToken, async (req: any, res) => {
+  app.post("/api/challenges", ensureAuthenticated, async (req: any, res) => {
     try {
       const challengeData = insertChallengeSchema.parse(req.body);
       
@@ -466,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update challenge progress
-  app.put("/api/challenges/:id/progress", authenticateToken, async (req: any, res) => {
+  app.put("/api/challenges/:id/progress", ensureAuthenticated, async (req: any, res) => {
     try {
       const challengeId = parseInt(req.params.id);
       const { stepsCompleted } = z.object({
@@ -548,7 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ================== MESSAGE ROUTES ==================
   
   // Get messages for a match
-  app.get("/api/matches/:id/messages", authenticateToken, async (req: any, res) => {
+  app.get("/api/matches/:id/messages", ensureAuthenticated, async (req: any, res) => {
     try {
       const matchId = parseInt(req.params.id);
       
@@ -575,7 +489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Send a message
-  app.post("/api/messages", authenticateToken, async (req: any, res) => {
+  app.post("/api/messages", ensureAuthenticated, async (req: any, res) => {
     try {
       const messageData = insertMessageSchema.parse({
         ...req.body,
@@ -604,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ================== ACHIEVEMENT ROUTES ==================
   
   // Get user achievements
-  app.get("/api/achievements", authenticateToken, async (req: any, res) => {
+  app.get("/api/achievements", ensureAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       
