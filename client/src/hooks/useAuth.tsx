@@ -59,7 +59,7 @@ const registerSchema = z.object({
 });
 
 // Provider component
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
   const { toast } = useToast();
 
   // Get current user

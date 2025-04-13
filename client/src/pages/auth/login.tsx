@@ -35,7 +35,12 @@ export default function Login() {
     }
 
     // Submit login
-    auth.loginMutation.mutate({ username, password });
+    try {
+      // Use the auth context login method
+      auth.loginMutation.mutate({ username, password });
+    } catch (error) {
+      console.error("Login error:", error);
+    }
   };
 
   return (
