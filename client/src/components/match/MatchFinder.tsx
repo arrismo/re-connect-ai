@@ -26,7 +26,11 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
   const { data: recommendationsData, isLoading: recommendationsLoading, refetch } = useQuery({
     queryKey: ['/api/matches/find', selectedInterests],
     queryFn: async () => {
-      const response = await fetch(`/api/matches/find?interests=${selectedInterests.join(',')}`);
+      const params = new URLSearchParams();
+      if (selectedInterests.length > 0) {
+        params.set('interests', selectedInterests.join(','));
+      }
+      const response = await fetch(`/api/matches/find?${params.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to find matches');
       }
