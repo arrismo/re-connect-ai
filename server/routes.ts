@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { aiService } from "./ai";
@@ -12,9 +12,8 @@ import {
   insertAchievementSchema,
   insertInterestSchema
 } from "@shared/schema";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { setupAuth } from "./auth";
 
 const JWT_SECRET = process.env.JWT_SECRET || "support-match-secret-key";
 
@@ -37,9 +36,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     aiService.initialize(genAI);
+    console.log("Gemini AI model initialized successfully");
   } catch (error) {
     console.error("Failed to initialize Google AI:", error);
   }
+  
+  // Setup authentication
+  setupAuth(app);
 
   // ================== AUTH ROUTES ==================
   
@@ -624,6 +627,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create HTTP server
   const httpServer = createServer(app);
+  
+  // Add error handler
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error(err.stack);
+    res.status(500).json({ message: "Internal server error" });
+  });
+  
   return httpServer;
 }
