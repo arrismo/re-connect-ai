@@ -42,19 +42,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Default interests are now created through setupAuth function
   // Auth routes handled by the /api/register, /api/login, /api/logout, /api/user endpoints in auth.ts
   
-  // Get current user
-  app.get("/api/auth/me", ensureAuthenticated, async (req: any, res) => {
-    try {
-      const user = await storage.getUser(req.user.id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      res.status(200).json({ user: { ...user, password: undefined } });
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
+  // Note: the basic /api/user endpoint already exists from auth.ts, 
+  // so this is redundant and can be removed
   
   // ================== USER ROUTES ==================
   
