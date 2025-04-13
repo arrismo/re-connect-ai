@@ -54,14 +54,14 @@ export default function AppShell({ children }: AppShellProps) {
               return (
                 <li key={index} className="mb-2">
                   <Link href={item.href}>
-                    <a className={`flex items-center p-4 md:px-6 rounded-lg group
+                    <div className={`flex items-center p-4 md:px-6 rounded-lg group cursor-pointer
                       ${isActive ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'text-neutral-600 hover:bg-neutral-100'}`}>
                       <item.icon className="w-6 h-6 text-center" />
                       <span className="ml-3 text-sm font-medium hidden md:block">{item.label}</span>
                       {item.badge && (
                         <span className="ml-auto bg-accent text-white text-xs px-2 py-1 rounded-full hidden md:block">3</span>
                       )}
-                    </a>
+                    </div>
                   </Link>
                 </li>
               );
