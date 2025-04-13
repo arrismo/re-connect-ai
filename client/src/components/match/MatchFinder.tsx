@@ -25,6 +25,13 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
   // Find match recommendations
   const { data: recommendationsData, isLoading: recommendationsLoading, refetch } = useQuery({
     queryKey: ['/api/matches/find', selectedInterests],
+    queryFn: async () => {
+      const response = await fetch(`/api/matches/find?interests=${selectedInterests.join(',')}`);
+      if (!response.ok) {
+        throw new Error('Failed to find matches');
+      }
+      return response.json();
+    },
     enabled: false,
   });
   
