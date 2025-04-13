@@ -112,32 +112,68 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
-                {interests.map((interest: any) => (
-                  <div 
-                    key={interest.id} 
-                    className={`border rounded-lg p-3 flex items-center hover:border-primary cursor-pointer ${
-                      selectedInterests.includes(interest.name) 
-                        ? 'bg-primary/5 border-primary' 
-                        : 'border-neutral-300'
-                    }`}
-                    onClick={() => toggleInterest(interest.name)}
-                  >
-                    <Checkbox 
-                      id={`interest-${interest.id}`}
-                      checked={selectedInterests.includes(interest.name)}
-                      className="h-4 w-4 text-primary"
-                      onCheckedChange={() => toggleInterest(interest.name)}
-                    />
-                    <label 
-                      htmlFor={`interest-${interest.id}`} 
-                      className="ml-2 text-sm font-medium cursor-pointer"
-                    >
-                      {interest.name}
-                    </label>
+              {interests.length > 0 ? (
+                <>
+                  <p className="text-sm text-neutral-600 mb-3">
+                    Select the areas where you're looking for support. You can select multiple options.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
+                    {interests.map((interest: any) => (
+                      <div 
+                        key={interest.id} 
+                        className={`border rounded-lg p-3 flex items-center hover:border-primary cursor-pointer ${
+                          selectedInterests.includes(interest.name) 
+                            ? 'bg-primary/5 border-primary' 
+                            : 'border-neutral-300'
+                        }`}
+                        onClick={() => toggleInterest(interest.name)}
+                      >
+                        <Checkbox 
+                          id={`interest-${interest.id}`}
+                          checked={selectedInterests.includes(interest.name)}
+                          className="h-4 w-4 text-primary"
+                          onCheckedChange={() => toggleInterest(interest.name)}
+                        />
+                        <label 
+                          htmlFor={`interest-${interest.id}`} 
+                          className="ml-2 text-sm font-medium cursor-pointer w-full"
+                        >
+                          {interest.name}
+                        </label>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                  {selectedInterests.length > 0 && (
+                    <div className="bg-accent/10 p-3 rounded-lg mb-4">
+                      <p className="text-sm font-medium">Selected interests: {selectedInterests.length}</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedInterests.map((interest, index) => (
+                          <span 
+                            key={index}
+                            className="bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full flex items-center"
+                          >
+                            {interest}
+                            <button 
+                              className="ml-1 text-primary hover:text-primary/80"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleInterest(interest);
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-neutral-600 mb-2">No interests found in the system.</p>
+                  <p className="text-sm text-neutral-500">Please try again later or contact support.</p>
+                </div>
+              )}
               
               <div className="flex justify-end">
                 <Button
