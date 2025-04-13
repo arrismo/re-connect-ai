@@ -1,26 +1,20 @@
 import {
-  users,
   User,
   InsertUser,
-  matches,
   Match,
   InsertMatch,
-  challenges,
   Challenge,
   InsertChallenge,
-  challengeProgresses,
   ChallengeProgress,
   InsertChallengeProgress,
-  messages,
   Message,
   InsertMessage,
-  achievements,
   Achievement,
   InsertAchievement,
-  interests,
   Interest,
   InsertInterest
 } from "@shared/schema";
+import { DatabaseStorage } from "./DatabaseStorage";
 
 export interface IStorage {
   // User related methods
@@ -403,4 +397,5 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Use the database storage implementation
+export const storage = new DatabaseStorage();
