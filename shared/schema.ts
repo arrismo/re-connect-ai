@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, foreignKey, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // ========== USER SCHEMA ==========
 export const users = pgTable("users", {
@@ -29,8 +30,8 @@ export const insertUserSchema = createInsertSchema(users).omit({
 // ========== MATCH SCHEMA ==========
 export const matches = pgTable("matches", {
   id: serial("id").primaryKey(),
-  userId1: integer("user_id_1").notNull(),
-  userId2: integer("user_id_2").notNull(),
+  userId1: integer("user_id_1").notNull().references(() => users.id),
+  userId2: integer("user_id_2").notNull().references(() => users.id),
   matchScore: integer("match_score").notNull(),
   matchDetails: jsonb("match_details"),
   status: text("status").notNull().default("pending"), // pending, active, rejected, completed
@@ -47,7 +48,7 @@ export const insertMatchSchema = createInsertSchema(matches).omit({
 // ========== CHALLENGE SCHEMA ==========
 export const challenges = pgTable("challenges", {
   id: serial("id").primaryKey(),
-  matchId: integer("match_id").notNull(),
+  matchId: integer("match_id").notNull().references(() => matches.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
   type: text("type").notNull(), // daily, weekly, one-time
@@ -66,10 +67,14 @@ export const insertChallengeSchema = createInsertSchema(challenges).omit({
 // ========== CHALLENGE PROGRESS SCHEMA ==========
 export const challengeProgresses = pgTable("challenge_progresses", {
   id: serial("id").primaryKey(),
-  challengeId: integer("challenge_id").notNull(),
-  userId: integer("user_id").notNull(),
+  challengeId: integer("challenge_id").notNull().references(() => challenges.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   stepsCompleted: integer("steps_completed").default(0),
   lastUpdated: timestamp("last_updated").defaultNow(),
+}, (table) => {
+  return {
+    uniqueUserChallenge: unique().on(table.challengeId, table.userId)
+  };
 });
 
 export const insertChallengeProgressSchema = createInsertSchema(challengeProgresses).omit({
@@ -80,8 +85,8 @@ export const insertChallengeProgressSchema = createInsertSchema(challengeProgres
 // ========== MESSAGE SCHEMA ==========
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
-  matchId: integer("match_id").notNull(),
-  senderId: integer("sender_id").notNull(),
+  matchId: integer("match_id").notNull().references(() => matches.id),
+  senderId: integer("sender_id").notNull().references(() => users.id),
   content: text("content").notNull(),
   sentAt: timestamp("sent_at").defaultNow(),
   isRead: boolean("is_read").default(false),
@@ -107,7 +112,7 @@ export const insertInterestSchema = createInsertSchema(interests).omit({
 // ========== ACHIEVEMENT SCHEMA ==========
 export const achievements = pgTable("achievements", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
   type: text("type").notNull(),
   title: text("title").notNull(),
   description: text("description").notNull(),
@@ -119,6 +124,67 @@ export const insertAchievementSchema = createInsertSchema(achievements).omit({
   id: true,
   earnedAt: true,
 });
+
+// Define relations
+export const usersRelations = relations(users, ({ many }) => ({
+  sentMatches: many(matches, { relationName: "user1_matches" }),
+  receivedMatches: many(matches, { relationName: "user2_matches" }),
+  challengeProgresses: many(challengeProgresses),
+  messages: many(messages),
+  achievements: many(achievements)
+}));
+
+export const matchesRelations = relations(matches, ({ one, many }) => ({
+  user1: one(users, {
+    fields: [matches.userId1],
+    references: [users.id],
+    relationName: "user1_matches"
+  }),
+  user2: one(users, {
+    fields: [matches.userId2],
+    references: [users.id],
+    relationName: "user2_matches"
+  }),
+  challenges: many(challenges),
+  messages: many(messages)
+}));
+
+export const challengesRelations = relations(challenges, ({ one, many }) => ({
+  match: one(matches, {
+    fields: [challenges.matchId],
+    references: [matches.id]
+  }),
+  progressRecords: many(challengeProgresses)
+}));
+
+export const challengeProgressesRelations = relations(challengeProgresses, ({ one }) => ({
+  challenge: one(challenges, {
+    fields: [challengeProgresses.challengeId],
+    references: [challenges.id]
+  }),
+  user: one(users, {
+    fields: [challengeProgresses.userId],
+    references: [users.id]
+  })
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  match: one(matches, {
+    fields: [messages.matchId],
+    references: [matches.id]
+  }),
+  sender: one(users, {
+    fields: [messages.senderId],
+    references: [users.id]
+  })
+}));
+
+export const achievementsRelations = relations(achievements, ({ one }) => ({
+  user: one(users, {
+    fields: [achievements.userId],
+    references: [users.id]
+  })
+}));
 
 // Export types
 export type User = typeof users.$inferSelect;
