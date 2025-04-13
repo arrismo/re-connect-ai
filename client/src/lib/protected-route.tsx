@@ -11,27 +11,27 @@ export function ProtectedRoute({
   path,
   component: Component
 }: ProtectedRouteProps) {
-  const { isAuthenticated, loading } = useAuth();
+  const auth = useAuth();
 
-  if (loading) {
-    return (
-      <Route path={path}>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Route>
-    );
-  }
+  return (
+    <Route path={path}>
+      {() => {
+        if (auth.loading) {
+          return (
+            <div className="flex items-center justify-center min-h-screen">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          );
+        }
 
-  if (!isAuthenticated) {
-    return (
-      <Route path={path}>
-        <Redirect to="/auth" />
-      </Route>
-    );
-  }
+        if (!auth.isAuthenticated) {
+          return <Redirect to="/auth" />;
+        }
 
-  return <Route path={path} component={Component} />;
+        return <Component />;
+      }}
+    </Route>
+  );
 }
 
 interface PublicOnlyRouteProps {
@@ -43,25 +43,25 @@ export function PublicOnlyRoute({
   path,
   component: Component
 }: PublicOnlyRouteProps) {
-  const { isAuthenticated, loading } = useAuth();
+  const auth = useAuth();
 
-  if (loading) {
-    return (
-      <Route path={path}>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Route>
-    );
-  }
+  return (
+    <Route path={path}>
+      {() => {
+        if (auth.loading) {
+          return (
+            <div className="flex items-center justify-center min-h-screen">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          );
+        }
 
-  if (isAuthenticated) {
-    return (
-      <Route path={path}>
-        <Redirect to="/" />
-      </Route>
-    );
-  }
+        if (auth.isAuthenticated) {
+          return <Redirect to="/dashboard" />;
+        }
 
-  return <Route path={path} component={Component} />;
+        return <Component />;
+      }}
+    </Route>
+  );
 }

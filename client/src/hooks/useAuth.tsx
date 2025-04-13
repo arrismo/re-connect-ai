@@ -70,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false,
   });
 
   // Login mutation
@@ -83,7 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Login failed");
       }
-      return await res.json();
+      
+      // Return the user data
+      const userData = await res.json();
+      return userData;
     },
     onSuccess: (data: SelectUser) => {
       queryClient.setQueryData(["/api/user"], data);
@@ -112,7 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Registration failed");
       }
-      return await res.json();
+      
+      // Return the user data
+      const userData = await res.json();
+      return userData;
     },
     onSuccess: (data: SelectUser) => {
       queryClient.setQueryData(["/api/user"], data);
@@ -149,18 +156,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const value: AuthContextType = {
+    user: user || null,
+    isAuthenticated: !!user,
+    loading,
+    error,
+    loginMutation,
+    registerMutation,
+    logout,
+  };
+  
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        loading,
-        error,
-        loginMutation,
-        registerMutation,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

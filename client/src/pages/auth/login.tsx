@@ -1,9 +1,4 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -12,133 +7,138 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { UsersRound, ArrowRight } from "lucide-react";
-
-const loginSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/useAuth";
+import { Link } from "wouter";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function Login() {
-  const [, setLocation] = useLocation();
-  const { login } = useAuth();
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const auth = useAuth();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
-  });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
 
-  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
-    try {
-      setIsLoading(true);
-      setError("");
-      await login(values.username, values.password);
-      setLocation("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Failed to login. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
+    // Basic validation
+    const newErrors: Record<string, string> = {};
+    if (!username) newErrors.username = "Username is required";
+    if (!password) newErrors.password = "Password is required";
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
+
+    // Submit login
+    auth.loginMutation.mutate({ username, password });
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-neutral-50 p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6 flex justify-center">
-          <div className="flex items-center">
-            <div className="h-10 w-10 bg-primary rounded-lg flex items-center justify-center text-white text-xl font-bold">
-              <UsersRound size={20} />
-            </div>
-            <h1 className="text-xl font-bold text-primary ml-3">SupportMatch</h1>
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Welcome Back</CardTitle>
-            <CardDescription>
-              Log in to connect with your accountability partners
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-500">
-                {error}
-              </div>
-            )}
-
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter your username" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="flex flex-col md:flex-row w-full max-w-4xl bg-background rounded-lg shadow-lg overflow-hidden">
+        {/* Form Side */}
+        <div className="w-full md:w-1/2 p-4">
+          <Card className="border-none shadow-none">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+              <CardDescription>
+                Enter your credentials to access your account
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={auth.loginMutation.isPending}
+                    className={errors.username ? "border-destructive" : ""}
+                  />
+                  {errors.username && (
+                    <p className="text-sm text-destructive">{errors.username}</p>
                   )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Enter your password"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={auth.loginMutation.isPending}
+                    className={errors.password ? "border-destructive" : ""}
+                  />
+                  {errors.password && (
+                    <p className="text-sm text-destructive">{errors.password}</p>
                   )}
-                />
-
+                </div>
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isLoading}
+                  disabled={auth.loginMutation.isPending}
                 >
-                  {isLoading ? "Logging in..." : "Login"}
+                  {auth.loginMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
                 </Button>
+                {auth.loginMutation.isError && (
+                  <p className="text-sm text-destructive text-center">
+                    {auth.loginMutation.error.message}
+                  </p>
+                )}
               </form>
-            </Form>
-          </CardContent>
-          <CardFooter className="flex justify-center border-t p-4">
-            <div className="text-center text-sm">
-              <p className="text-neutral-600">
+            </CardContent>
+            <CardFooter className="flex justify-center">
+              <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
-                <Link href="/register">
-                  <a className="text-primary font-medium hover:underline inline-flex items-center">
-                    Register now <ArrowRight className="ml-1 h-3 w-3" />
-                  </a>
+                <Link href="/auth/register">
+                  <span className="text-primary cursor-pointer hover:underline">
+                    Sign up
+                  </span>
                 </Link>
               </p>
-            </div>
-          </CardFooter>
-        </Card>
+            </CardFooter>
+          </Card>
+        </div>
+
+        {/* Info Side */}
+        <div className="w-full md:w-1/2 bg-primary p-12 flex flex-col justify-center text-primary-foreground">
+          <h2 className="text-3xl font-bold mb-4">
+            Welcome to Community Support Matchmaking
+          </h2>
+          <p className="mb-6">
+            Connect with others who share similar challenges and goals. Support each
+            other through accountability partnerships and meaningful engagement.
+          </p>
+          <ul className="space-y-2">
+            <li className="flex items-center">
+              <div className="mr-2 text-xl">✓</div>
+              <span>AI-powered matchmaking for ideal partnerships</span>
+            </li>
+            <li className="flex items-center">
+              <div className="mr-2 text-xl">✓</div>
+              <span>Structured challenges to foster accountability</span>
+            </li>
+            <li className="flex items-center">
+              <div className="mr-2 text-xl">✓</div>
+              <span>Privacy-focused design to share safely</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );

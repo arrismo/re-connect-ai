@@ -1,10 +1,9 @@
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { Toaster } from "@/components/ui/toaster";
 import AppShell from "@/layouts/AppShell";
-import Login from "@/pages/auth/login";
-import Register from "@/pages/auth/register";
 import Dashboard from "@/pages/dashboard";
 import Matches from "@/pages/matches";
 import Challenges from "@/pages/challenges";
@@ -12,55 +11,16 @@ import Messages from "@/pages/messages";
 import Achievements from "@/pages/achievements";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
-
-function ProtectedRoute({ component: Component, ...rest }: any) {
-  const { isAuthenticated, loading } = useAuth();
-  const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      setLocation("/login");
-    }
-  }, [isAuthenticated, loading, setLocation]);
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  return isAuthenticated ? <Component {...rest} /> : null;
-}
-
-function PublicOnlyRoute({ component: Component, ...rest }: any) {
-  const { isAuthenticated, loading } = useAuth();
-  const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      setLocation("/dashboard");
-    }
-  }, [isAuthenticated, loading, setLocation]);
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  return !isAuthenticated ? <Component {...rest} /> : null;
-}
+import AuthPage from "@/pages/auth-page";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute, PublicOnlyRoute } from "@/lib/protected-route";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/login" component={(props) => <PublicOnlyRoute component={Login} {...props} />} />
-      <Route path="/register" component={(props) => <PublicOnlyRoute component={Register} {...props} />} />
+      <Route path="/auth" component={AuthPage} />
+      <Route path="/auth/login" component={AuthPage} />
+      <Route path="/auth/register" component={AuthPage} />
       
       <Route path="/" component={() => {
         const [, setLocation] = useLocation();
@@ -70,53 +30,41 @@ function Router() {
         return null;
       }} />
       
-      <Route path="/dashboard" component={(props) => 
-        <ProtectedRoute component={() => 
-          <AppShell>
-            <Dashboard {...props} />
-          </AppShell>
-        } {...props} />
-      } />
+      <ProtectedRoute path="/dashboard" component={() => (
+        <AppShell>
+          <Dashboard />
+        </AppShell>
+      )} />
       
-      <Route path="/matches" component={(props) => 
-        <ProtectedRoute component={() => 
-          <AppShell>
-            <Matches {...props} />
-          </AppShell>
-        } {...props} />
-      } />
+      <ProtectedRoute path="/matches" component={() => (
+        <AppShell>
+          <Matches />
+        </AppShell>
+      )} />
       
-      <Route path="/challenges" component={(props) => 
-        <ProtectedRoute component={() => 
-          <AppShell>
-            <Challenges {...props} />
-          </AppShell>
-        } {...props} />
-      } />
+      <ProtectedRoute path="/challenges" component={() => (
+        <AppShell>
+          <Challenges />
+        </AppShell>
+      )} />
       
-      <Route path="/messages" component={(props) => 
-        <ProtectedRoute component={() => 
-          <AppShell>
-            <Messages {...props} />
-          </AppShell>
-        } {...props} />
-      } />
+      <ProtectedRoute path="/messages" component={() => (
+        <AppShell>
+          <Messages />
+        </AppShell>
+      )} />
       
-      <Route path="/achievements" component={(props) => 
-        <ProtectedRoute component={() => 
-          <AppShell>
-            <Achievements {...props} />
-          </AppShell>
-        } {...props} />
-      } />
+      <ProtectedRoute path="/achievements" component={() => (
+        <AppShell>
+          <Achievements />
+        </AppShell>
+      )} />
       
-      <Route path="/settings" component={(props) => 
-        <ProtectedRoute component={() => 
-          <AppShell>
-            <Settings {...props} />
-          </AppShell>
-        } {...props} />
-      } />
+      <ProtectedRoute path="/settings" component={() => (
+        <AppShell>
+          <Settings />
+        </AppShell>
+      )} />
       
       <Route component={NotFound} />
     </Switch>
@@ -128,6 +76,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router />
+        <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );
