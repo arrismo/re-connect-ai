@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -13,17 +13,40 @@ interface MatchFinderProps {
   onClose: () => void;
 }
 
+interface Interest {
+  id: number;
+  name: string;
+  category: string;
+}
+
+interface InterestsResponse {
+  interests: Interest[];
+}
+
+interface MatchRecommendation {
+  userId: number;
+  displayName: string;
+  profilePic?: string;
+  matchScore: number;
+  sharedInterests: string[];
+  memberSince: string;
+}
+
+interface RecommendationsResponse {
+  recommendations: MatchRecommendation[];
+}
+
 export default function MatchFinder({ onClose }: MatchFinderProps) {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const { toast } = useToast();
   
   // Get all interests
-  const { data: interestsData, isLoading: interestsLoading } = useQuery({
+  const { data: interestsData, isLoading: interestsLoading } = useQuery<InterestsResponse>({
     queryKey: ['/api/interests'],
   });
   
   // Find match recommendations
-  const { data: recommendationsData, isLoading: recommendationsLoading, refetch } = useQuery({
+  const { data: recommendationsData, isLoading: recommendationsLoading, refetch } = useQuery<RecommendationsResponse>({
     queryKey: ['/api/matches/find', selectedInterests],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -50,7 +73,7 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
       toast({
         title: "Match Request Sent",
         description: "Your match request has been sent successfully.",
-        variant: "success",
+        variant: "default",
       });
     },
     onError: (error: any) => {
@@ -72,7 +95,7 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
   };
   
   // Find matches
-  const handleFindMatches = () => {
+  const handleFindMatches = async () => {
     if (selectedInterests.length === 0) {
       toast({
         title: "No Interests Selected",
@@ -82,7 +105,32 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
       return;
     }
     
-    refetch();
+    console.log("Finding matches with interests:", selectedInterests);
+    try {
+      const result = await refetch();
+      console.log("Match finding result:", result);
+      
+      if (result.error) {
+        toast({
+          title: "Error Finding Matches",
+          description: result.error.message || "An error occurred while finding matches",
+          variant: "destructive",
+        });
+      } else if (!result.data || !result.data.recommendations || result.data.recommendations.length === 0) {
+        toast({
+          title: "No Matches Found",
+          description: "No matching users were found with the selected interests. Try selecting different interests or check back later.",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error("Error finding matches:", error);
+      toast({
+        title: "Error Finding Matches",
+        description: "An unexpected error occurred while finding matches. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   // Request a match
@@ -91,10 +139,10 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
   };
   
   // Load all available interests
-  const interests = interestsData?.interests || [];
+  const interests = (interestsData as InterestsResponse)?.interests || [];
   
   // Get recommendations
-  const recommendations = recommendationsData?.recommendations || [];
+  const recommendations = (recommendationsData as RecommendationsResponse)?.recommendations || [];
 
   return (
     <section className="mb-8">
