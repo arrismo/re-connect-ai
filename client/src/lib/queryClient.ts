@@ -29,7 +29,17 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // For simple string query keys
+    let url = queryKey[0] as string;
+    
+    // If it's a query key array with nested paths like ['/api/matches', matchId, 'messages']
+    if (queryKey.length > 1 && url === '/api/matches' && queryKey[2] === 'messages') {
+      url = `/api/matches/${queryKey[1]}/messages`;
+    }
+    
+    console.log(`Fetching from URL: ${url}`);
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 

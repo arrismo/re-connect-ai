@@ -17,6 +17,8 @@ export default function Messages() {
     queryKey: ['/api/matches'],
   });
   
+  console.log("Messages component matchesData:", matchesData);
+  
   // Get active matches
   const activeMatches = matchesData?.matches?.filter(
     (match: any) => match.status === 'active'
