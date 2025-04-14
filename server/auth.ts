@@ -128,12 +128,12 @@ export function setupAuth(app: Express) {
   // Register API routes
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { password, displayName, email, interests, characteristics } = req.body;
+      const { password, email, interests, characteristics, bio } = req.body;
       
       // Validate required fields
-      if (!password || !displayName || !email) {
+      if (!password || !email) {
         return res.status(400).json({ 
-          message: "Required fields: password, displayName, email" 
+          message: "Required fields: password, email" 
         });
       }
 
@@ -163,16 +163,19 @@ export function setupAuth(app: Express) {
         username = `anon_${Math.random().toString(36).substring(2, 10)}`;
       }
 
-      console.log(`Generated anonymous username: ${username} for user ${displayName}`);
+      // Generate a display name based on the same information
+      const displayName = username; // Use the same AI-generated name for both username and display name
 
-      // Create new user with the generated username
+      console.log(`Generated anonymous username and display name: ${username}`);
+
+      // Create new user with the generated username and display name
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         username,
         password: hashedPassword,
         displayName,
         email,
-        bio: null,
+        bio: bio || null,
         interests: interestsArray.length > 0 ? interestsArray : null,
         goals: null,
         experiences: null,

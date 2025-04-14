@@ -124,7 +124,7 @@ export default function Register() {
       return;
     }
 
-    // Submit registration with AI-generated username
+    // Submit registration with AI-generated username and display name
     const { confirmPassword, ...registrationData } = formData;
     auth.registerMutation.mutate({
       ...registrationData,
