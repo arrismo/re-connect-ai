@@ -656,7 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const sender = await storage.getUser(req.user.id);
         
         // Send notification via WebSocket
-        sendNotification(recipientId, {
+        const notificationSent = sendNotification(recipientId, {
           type: 'new_message',
           matchId: match.id,
           message: {
@@ -673,7 +673,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
         
-        console.log(`Sent message notification to user ${recipientId}`);
+        if (notificationSent) {
+          console.log(`Real-time notification delivered successfully to user ${recipientId}`);
+        } else {
+          console.log(`Real-time notification could not be delivered to user ${recipientId} (user not connected)`);
+          // Store notification for later delivery when user connects
+          // This is a fallback mechanism we could implement in the future
+        }
       } catch (notificationError) {
         // Just log the error, don't fail the request
         console.error('Failed to send message notification:', notificationError);
@@ -722,6 +728,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Store connected clients by userId
   const connectedClients = new Map<number, WebSocket>();
   
+  // Store pending messages for offline users
+  const pendingMessages = new Map<number, any[]>();
+  
   // Handle WebSocket connections
   wss.on('connection', (ws) => {
     let userId: number | null = null;
@@ -739,8 +748,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!isNaN(userId)) {
             connectedClients.set(userId, ws);
             console.log(`WebSocket: User ${userId} authenticated`);
+            
             // Send pending matches notification if any
             sendPendingMatchesUpdate(userId);
+            
+            // Send any pending messages that were stored while user was offline
+            if (pendingMessages.has(userId)) {
+              const messages = pendingMessages.get(userId) || [];
+              console.log(`Found ${messages.length} pending messages for user ${userId}`);
+              
+              for (const message of messages) {
+                sendNotification(userId, message);
+              }
+              
+              // Clear the pending messages after sending
+              pendingMessages.delete(userId);
+            }
           }
         }
       } catch (error) {

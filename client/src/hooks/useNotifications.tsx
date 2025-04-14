@@ -145,7 +145,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             });
             
             // Also invalidate the messages cache so the new message appears if the user is on the messages page
-            queryClient.invalidateQueries({ queryKey: [`/api/matches/${messageData.matchId}/messages`] });
+            // Using the same format as in ChatInterface.tsx
+            queryClient.invalidateQueries({ queryKey: ['/api/matches', messageData.matchId, 'messages'] });
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
