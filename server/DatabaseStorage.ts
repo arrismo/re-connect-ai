@@ -9,7 +9,7 @@ import {
   type Interest, type InsertInterest
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql, or } from "drizzle-orm";
+import { eq, and, desc, sql, or, inArray } from "drizzle-orm";
 import { IStorage } from "./storage";
 
 export class DatabaseStorage implements IStorage {
@@ -175,11 +175,16 @@ export class DatabaseStorage implements IStorage {
     console.log(`Getting challenges for match IDs: ${validMatchIds.join(', ')}`);
     
     try {
-      // Use inArray for safe parameterized IN query
-      return db
+      // Use OR conditions for each valid match ID
+      const results = await db
         .select()
         .from(challenges)
-        .where(inArray(challenges.matchId, validMatchIds));
+        .where(
+          or(
+            ...validMatchIds.map(id => eq(challenges.matchId, id))
+          )
+        );
+      return results;
     } catch (error) {
       console.error(`Error in getUserChallenges: ${error}`);
       return [];
