@@ -28,7 +28,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Sparkles } from "lucide-react";
+import { AIChallengeGenerator } from "./AIChallengeGenerator";
 
 interface CreateChallengeFormProps {
   matches: any[];
@@ -45,6 +46,7 @@ const challengeSchema = z.object({
   type: z.enum(["daily", "weekly", "one-time"], {
     required_error: "Please select a challenge type",
   }),
+  challengeType: z.enum(["generic", "days_sober", "check_in_streak"]).default("generic"),
   totalSteps: z.number({
     required_error: "Please enter the number of steps",
   }).min(1, { message: "Must have at least 1 step" }).max(30, { message: "Cannot exceed 30 steps" }),
@@ -61,6 +63,7 @@ const challengeSchema = z.object({
 
 export default function CreateChallengeForm({ matches, onSubmit, isSubmitting }: CreateChallengeFormProps) {
   const [challengeType, setChallengeType] = useState<string>("daily");
+  const [specialChallengeType, setSpecialChallengeType] = useState<string>("generic");
   
   const form = useForm<z.infer<typeof challengeSchema>>({
     resolver: zodResolver(challengeSchema),
@@ -69,11 +72,30 @@ export default function CreateChallengeForm({ matches, onSubmit, isSubmitting }:
       title: "",
       description: "",
       type: "daily",
+      challengeType: "generic",
       totalSteps: 7,
       startDate: new Date(),
       endDate: addDays(new Date(), 7),
     },
   });
+  
+  // Handle AI generated challenge selection
+  const handleAIChallengeSelect = (challenge: any) => {
+    form.setValue("title", challenge.title);
+    form.setValue("description", challenge.description);
+    form.setValue("challengeType", challenge.challengeType);
+    form.setValue("totalSteps", challenge.totalSteps);
+    
+    if (challenge.startDate) {
+      form.setValue("startDate", new Date(challenge.startDate));
+    }
+    
+    if (challenge.endDate) {
+      form.setValue("endDate", new Date(challenge.endDate));
+    }
+    
+    setSpecialChallengeType(challenge.challengeType);
+  };
   
   // Update form when challenge type changes
   const handleTypeChange = (value: string) => {
@@ -196,40 +218,97 @@ export default function CreateChallengeForm({ matches, onSubmit, isSubmitting }:
           )}
         />
         
-        {/* Challenge Type */}
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Challenge Type</FormLabel>
-              <Select 
-                onValueChange={(value) => handleTypeChange(value)}
-                defaultValue={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select challenge type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="daily">Daily Challenge</SelectItem>
-                  <SelectItem value="weekly">Weekly Challenge</SelectItem>
-                  <SelectItem value="one-time">One-time Task</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                {challengeType === "daily" 
-                  ? "Track progress every day" 
-                  : challengeType === "weekly"
-                  ? "Track progress every week"
-                  : "A single task to complete"
-                }
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
+        {/* AI Challenge Generator */}
+        <div className="flex justify-center mb-2">
+          {form.getValues("matchId") && (
+            <AIChallengeGenerator 
+              matchId={form.getValues("matchId")} 
+              onChallengeSelected={handleAIChallengeSelect} 
+            />
           )}
-        />
+        </div>
+
+        {/* Challenge Type */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Frequency</FormLabel>
+                <Select 
+                  onValueChange={(value) => handleTypeChange(value)}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select challenge type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily Challenge</SelectItem>
+                    <SelectItem value="weekly">Weekly Challenge</SelectItem>
+                    <SelectItem value="one-time">One-time Task</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  {challengeType === "daily" 
+                    ? "Track progress every day" 
+                    : challengeType === "weekly"
+                    ? "Track progress every week"
+                    : "A single task to complete"
+                  }
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Special Challenge Type */}
+          <FormField
+            control={form.control}
+            name="challengeType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Challenge Style</FormLabel>
+                <Select 
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    setSpecialChallengeType(value);
+                    
+                    // Set default steps based on challenge type
+                    if (value === "days_sober") {
+                      form.setValue("totalSteps", 4);
+                    } else if (value === "check_in_streak") {
+                      form.setValue("totalSteps", 3);
+                    }
+                  }}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select challenge style" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="generic">Standard Challenge</SelectItem>
+                    <SelectItem value="days_sober">Sobriety Tracking</SelectItem>
+                    <SelectItem value="check_in_streak">Daily Check-in Streak</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  {specialChallengeType === "days_sober" 
+                    ? "Track days of sobriety with milestones at 7, 30, 90, and 365 days" 
+                    : specialChallengeType === "check_in_streak"
+                    ? "Build a streak by checking in daily with milestones at 7, 30, and 100 days"
+                    : "Regular challenge with customizable steps"
+                  }
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         
         {/* Number of Steps */}
         <FormField

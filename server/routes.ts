@@ -478,6 +478,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Generate AI challenge suggestions
+  app.post("/api/challenges/generate", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const { prompt, matchId } = z.object({
+        prompt: z.string(),
+        matchId: z.number()
+      }).parse(req.body);
+      
+      // Check if user is part of the match
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+      
+      if (match.userId1 !== req.user.id && match.userId2 !== req.user.id) {
+        return res.status(403).json({ message: "You don't have access to this match" });
+      }
+      
+      // Import dynamically to avoid issues during startup
+      const { generateChallengeIdeas } = await import('./challenge-generator');
+      
+      // Generate challenge suggestions
+      const challenges = await generateChallengeIdeas(prompt, matchId);
+      
+      res.status(200).json({ challenges });
+    } catch (error: any) {
+      console.error('Challenge generation error:', error);
+      res.status(500).json({ 
+        message: error.message || "Failed to generate challenge suggestions" 
+      });
+    }
+  });
+
   // Create a new challenge
   app.post("/api/challenges", ensureAuthenticated, async (req: any, res) => {
     try {
