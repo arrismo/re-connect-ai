@@ -61,6 +61,12 @@ export default function ChatInterface({ matchId, userId }: ChatInterfaceProps) {
   const match = data?.match;
   const otherUser = match?.otherUser;
   
+  // For debugging
+  console.log("Chat data received:", data);
+  console.log("Messages:", messages);
+  console.log("Match:", match);
+  console.log("OtherUser:", otherUser);
+  
   // Format last active time
   const formatLastActive = (date?: string) => {
     if (!date) return 'Never';

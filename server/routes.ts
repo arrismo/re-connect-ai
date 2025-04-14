@@ -603,24 +603,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/matches/:id/messages", ensureAuthenticated, async (req: any, res) => {
     try {
       const matchId = parseInt(req.params.id);
+      console.log(`Getting messages for match ID: ${matchId}, user ID: ${req.user.id}`);
       
       // Check if match exists and user is part of it
       const match = await storage.getMatch(matchId);
       if (!match) {
+        console.log(`Match ${matchId} not found`);
         return res.status(404).json({ message: "Match not found" });
       }
       
       if (match.userId1 !== req.user.id && match.userId2 !== req.user.id) {
+        console.log(`User ${req.user.id} does not have access to match ${matchId}`);
         return res.status(403).json({ message: "You don't have access to this match" });
       }
       
       // Get messages
       const messages = await storage.getMatchMessages(matchId);
+      console.log(`Retrieved ${messages.length} messages for match ${matchId}`);
       
       // Mark messages as read
       await storage.markMessagesAsRead(matchId, req.user.id);
+      console.log(`Marked messages as read for user ${req.user.id} in match ${matchId}`);
       
-      res.status(200).json({ messages });
+      // Get the other user's details
+      const otherUserId = match.userId1 === req.user.id ? match.userId2 : match.userId1;
+      const otherUser = await storage.getUser(otherUserId);
+      console.log(`Retrieved details for other user ${otherUserId} (${otherUser?.displayName})`);
+      
+      // Add match and other user details to response
+      const response = { 
+        messages,
+        match: {
+          ...match,
+          otherUser
+        }
+      };
+      console.log(`Sending response with ${messages.length} messages for match ${matchId}`);
+      res.status(200).json(response);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
