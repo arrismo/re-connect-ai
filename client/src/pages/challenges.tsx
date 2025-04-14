@@ -184,6 +184,9 @@ export default function Challenges() {
                 key={challenge.id} 
                 challenge={challenge}
                 onUpdateProgress={handleUpdateProgress}
+                onSobrietyUpdate={handleSobrietyUpdate}
+                onSobrietyReset={handleSobrietyReset}
+                onCheckIn={handleCheckIn}
               />
             ))}
           </div>
