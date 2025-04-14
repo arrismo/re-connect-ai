@@ -427,6 +427,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have permission to update this match" });
       }
       
+      // If activating a match, check if either user already has an active match
+      if (status === "active") {
+        // Check if requester already has an active match
+        const requesterActiveMatch = await hasActiveMatch(match.userId1);
+        if (requesterActiveMatch.hasMatch && requesterActiveMatch.match?.id !== matchId) {
+          return res.status(400).json({ 
+            message: "The requesting user already has an active match.",
+            activeMatch: requesterActiveMatch.match
+          });
+        }
+        
+        // Check if recipient already has an active match
+        const recipientActiveMatch = await hasActiveMatch(match.userId2);
+        if (recipientActiveMatch.hasMatch && recipientActiveMatch.match?.id !== matchId) {
+          return res.status(400).json({ 
+            message: "You already have an active match. Please unmatch first before accepting a new one.",
+            activeMatch: recipientActiveMatch.match
+          });
+        }
+      }
+      
       // Update match status
       const updatedMatch = await storage.updateMatchStatus(matchId, status);
       
@@ -455,6 +476,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(200).json({ match: updatedMatch });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Unmatch - end an active match
+  app.put("/api/matches/:id/unmatch", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const matchId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      const match = await storage.getMatch(matchId);
+      
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+      
+      // Check if user is part of the match
+      if (match.userId1 !== userId && match.userId2 !== userId) {
+        return res.status(403).json({ message: "You don't have access to this match" });
+      }
+      
+      // Check if match is active
+      if (match.status !== "active") {
+        return res.status(400).json({ message: "Only active matches can be unmatched" });
+      }
+      
+      // Set match status to "ended"
+      const updatedMatch = await storage.updateMatchStatus(matchId, "ended");
+      
+      // Notify the other user
+      const otherUserId = match.userId1 === userId ? match.userId2 : match.userId1;
+      const user = await storage.getUser(userId);
+      
+      // Send notification
+      sendNotification(otherUserId, {
+        type: 'match_ended',
+        matchId: match.id,
+        userId: user?.id,
+        displayName: user?.displayName || 'Your partner',
+        message: "Your partner has ended the match.",
+        timestamp: new Date().toISOString()
+      });
+      
+      res.status(200).json({ 
+        success: true, 
+        message: "Match has been ended successfully",
+        match: updatedMatch
+      });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -886,7 +956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check for streak achievements
       let achievement = null;
       
-      if (updatedProgress.currentStreak >= 7 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 1)) {
+      if (updatedProgress.currentStreak !== null && updatedProgress.currentStreak >= 7 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 1)) {
         achievement = await storage.createAchievement({
           userId,
           type: "streak",
@@ -898,7 +968,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateChallengeProgress(challengeId, userId, 1);
         await storage.addUserPoints(userId, 50);
       }
-      else if (updatedProgress.currentStreak >= 30 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 2)) {
+      else if (updatedProgress.currentStreak !== null && updatedProgress.currentStreak >= 30 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 2)) {
         achievement = await storage.createAchievement({
           userId,
           type: "streak",
@@ -910,7 +980,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateChallengeProgress(challengeId, userId, 2);
         await storage.addUserPoints(userId, 150);
       }
-      else if (updatedProgress.currentStreak >= 100 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 3)) {
+      else if (updatedProgress.currentStreak !== null && updatedProgress.currentStreak >= 100 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 3)) {
         achievement = await storage.createAchievement({
           userId,
           type: "streak",

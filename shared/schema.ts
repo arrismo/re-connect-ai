@@ -34,7 +34,7 @@ export const matches = pgTable("matches", {
   userId2: integer("user_id_2").notNull().references(() => users.id),
   matchScore: integer("match_score").notNull(),
   matchDetails: jsonb("match_details"),
-  status: text("status").notNull().default("pending"), // pending, active, rejected, completed
+  status: text("status").notNull().default("pending"), // pending, active, rejected, ended, completed
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
