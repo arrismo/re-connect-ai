@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, Calendar, Star, X, UserX } from "lucide-react";
+import { Check, Calendar, Loader2, Star, X, UserX } from "lucide-react";
 import MessageBubble from "@/components/chat/MessageBubble";
 import { Link } from "wouter";
 import { useMutation } from "@tanstack/react-query";
