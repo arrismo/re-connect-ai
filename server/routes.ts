@@ -787,11 +787,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const client = connectedClients.get(userId);
     if (!client) {
       console.log(`No WebSocket connection found for user ${userId}`);
+      
+      // Store the notification for later delivery
+      if (!pendingMessages.has(userId)) {
+        pendingMessages.set(userId, []);
+      }
+      pendingMessages.get(userId)?.push(notification);
+      console.log(`Stored notification for offline user ${userId} to deliver later`);
+      
       return false;
     }
     
     if (client.readyState !== WebSocket.OPEN) {
       console.log(`WebSocket for user ${userId} is not in OPEN state (state: ${client.readyState})`);
+      
+      // Store the notification for later delivery
+      if (!pendingMessages.has(userId)) {
+        pendingMessages.set(userId, []);
+      }
+      pendingMessages.get(userId)?.push(notification);
+      console.log(`Stored notification for user ${userId} with non-open connection`);
+      
       return false;
     }
     
@@ -802,6 +818,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return true;
     } catch (error) {
       console.error(`Error sending notification to user ${userId}:`, error);
+      
+      // Store the notification if there was an error sending it
+      if (!pendingMessages.has(userId)) {
+        pendingMessages.set(userId, []);
+      }
+      pendingMessages.get(userId)?.push(notification);
+      console.log(`Stored notification after send error for user ${userId}`);
+      
       return false;
     }
   }
