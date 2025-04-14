@@ -50,7 +50,15 @@ function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Google AI client
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+    // Log API key state (only showing first few chars for security)
+    const apiKey = process.env.GEMINI_API_KEY || "";
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is not set in environment variables");
+    } else {
+      console.log(`GEMINI_API_KEY is set, length: ${apiKey.length}, starts with: ${apiKey.substring(0, 4)}...`);
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
     aiService.initialize(genAI);
     console.log("Gemini AI model initialized successfully");
   } catch (error) {
