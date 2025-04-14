@@ -46,6 +46,14 @@ export interface IStorage {
   createChallengeProgress(progress: InsertChallengeProgress): Promise<ChallengeProgress>;
   updateChallengeProgress(challengeId: number, userId: number, stepsCompleted: number): Promise<ChallengeProgress>;
   
+  // Sobriety tracking methods
+  updateDaysSober(challengeId: number, userId: number, daysSober: number): Promise<ChallengeProgress>;
+  resetDaysSober(challengeId: number, userId: number): Promise<ChallengeProgress>;
+  
+  // Check-in streak methods
+  recordCheckIn(challengeId: number, userId: number): Promise<ChallengeProgress>;
+  getCheckInStreak(challengeId: number, userId: number): Promise<{currentStreak: number, longestStreak: number}>;
+  
   // Message related methods
   getMatchMessages(matchId: number): Promise<Message[]>;
   getRecentMatchMessages(matchId: number, limit: number): Promise<Message[]>;
@@ -301,6 +309,152 @@ export class MemStorage implements IStorage {
     
     this.challengeProgresses.set(key, updatedProgress);
     return updatedProgress;
+  }
+  
+  // Sobriety tracking methods
+  async updateDaysSober(challengeId: number, userId: number, daysSober: number): Promise<ChallengeProgress> {
+    const key = `${challengeId}-${userId}`;
+    const progress = await this.getChallengeProgress(challengeId, userId);
+    
+    if (!progress) {
+      return this.createChallengeProgress({
+        challengeId,
+        userId,
+        stepsCompleted: 0,
+        daysSober,
+        lastSoberDate: new Date()
+      });
+    }
+    
+    const updatedProgress = { 
+      ...progress, 
+      daysSober,
+      lastSoberDate: new Date(),
+      lastUpdated: new Date()
+    };
+    
+    this.challengeProgresses.set(key, updatedProgress);
+    return updatedProgress;
+  }
+  
+  async resetDaysSober(challengeId: number, userId: number): Promise<ChallengeProgress> {
+    const key = `${challengeId}-${userId}`;
+    const progress = await this.getChallengeProgress(challengeId, userId);
+    
+    if (!progress) {
+      return this.createChallengeProgress({
+        challengeId,
+        userId,
+        stepsCompleted: 0,
+        daysSober: 0,
+      });
+    }
+    
+    const updatedProgress = { 
+      ...progress, 
+      daysSober: 0,
+      lastUpdated: new Date()
+    };
+    
+    this.challengeProgresses.set(key, updatedProgress);
+    return updatedProgress;
+  }
+  
+  // Check-in streak methods
+  async recordCheckIn(challengeId: number, userId: number): Promise<ChallengeProgress> {
+    const key = `${challengeId}-${userId}`;
+    const progress = await this.getChallengeProgress(challengeId, userId);
+    const now = new Date();
+    
+    if (!progress) {
+      return this.createChallengeProgress({
+        challengeId,
+        userId,
+        stepsCompleted: 1,
+        currentStreak: 1,
+        longestStreak: 1,
+        lastCheckIn: now
+      });
+    }
+    
+    // Check if this is a consecutive check-in (within 24-36 hours of last check-in)
+    let currentStreak = progress.currentStreak || 0;
+    let longestStreak = progress.longestStreak || 0;
+    
+    const lastCheckIn = progress.lastCheckIn ? new Date(progress.lastCheckIn) : null;
+    
+    if (lastCheckIn) {
+      const hoursSinceLastCheckIn = (now.getTime() - lastCheckIn.getTime()) / (1000 * 60 * 60);
+      
+      // If check-in is within the valid window (24-36 hours), increment streak
+      if (hoursSinceLastCheckIn >= 20 && hoursSinceLastCheckIn <= 36) {
+        currentStreak += 1;
+        if (currentStreak > longestStreak) {
+          longestStreak = currentStreak;
+        }
+      } else if (hoursSinceLastCheckIn > 36) {
+        // Streak broken if more than 36 hours have passed
+        currentStreak = 1;
+      }
+      // If less than 20 hours, it's too soon for another check-in, but we'll allow it
+      // without incrementing the streak
+    } else {
+      // First check-in
+      currentStreak = 1;
+      longestStreak = 1;
+    }
+    
+    const updatedProgress = { 
+      ...progress, 
+      stepsCompleted: (progress.stepsCompleted || 0) + 1,
+      currentStreak,
+      longestStreak,
+      lastCheckIn: now,
+      lastUpdated: now
+    };
+    
+    this.challengeProgresses.set(key, updatedProgress);
+    return updatedProgress;
+  }
+  
+  async getCheckInStreak(challengeId: number, userId: number): Promise<{currentStreak: number, longestStreak: number}> {
+    const progress = await this.getChallengeProgress(challengeId, userId);
+    
+    if (!progress) {
+      return {
+        currentStreak: 0,
+        longestStreak: 0
+      };
+    }
+    
+    // Check if streak is still valid (not broken due to inactivity)
+    const now = new Date();
+    const lastCheckIn = progress.lastCheckIn ? new Date(progress.lastCheckIn) : null;
+    let currentStreak = progress.currentStreak || 0;
+    
+    if (lastCheckIn) {
+      const hoursSinceLastCheckIn = (now.getTime() - lastCheckIn.getTime()) / (1000 * 60 * 60);
+      
+      // If more than 36 hours have passed, streak is broken
+      if (hoursSinceLastCheckIn > 36) {
+        currentStreak = 0;
+        
+        // Update the stored value
+        const updatedProgress = { 
+          ...progress, 
+          currentStreak: 0,
+          lastUpdated: now
+        };
+        
+        const key = `${challengeId}-${userId}`;
+        this.challengeProgresses.set(key, updatedProgress);
+      }
+    }
+    
+    return {
+      currentStreak,
+      longestStreak: progress.longestStreak || 0
+    };
   }
   
   // ==========================

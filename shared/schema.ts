@@ -52,6 +52,7 @@ export const challenges = pgTable("challenges", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   type: text("type").notNull(), // daily, weekly, one-time
+  challengeType: text("challenge_type").notNull().default("generic"), // generic, days_sober, check_in_streak
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   totalSteps: integer("total_steps").notNull(),
@@ -71,6 +72,12 @@ export const challengeProgresses = pgTable("challenge_progresses", {
   userId: integer("user_id").notNull().references(() => users.id),
   stepsCompleted: integer("steps_completed").default(0),
   lastUpdated: timestamp("last_updated").defaultNow(),
+  lastCheckIn: timestamp("last_check_in"),
+  currentStreak: integer("current_streak").default(0),
+  longestStreak: integer("longest_streak").default(0),
+  daysSober: integer("days_sober").default(0),
+  lastSoberDate: timestamp("last_sober_date"),
+  additionalData: jsonb("additional_data"),
 }, (table) => {
   return {
     uniqueUserChallenge: unique().on(table.challengeId, table.userId)
