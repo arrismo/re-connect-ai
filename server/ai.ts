@@ -16,7 +16,7 @@ class AIService {
   initialize(genAI: GoogleGenerativeAI) {
     try {
       // Initialize the model
-      this.model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      this.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       console.log("Gemini AI model initialized successfully");
     } catch (error) {
       console.error("Failed to initialize Gemini AI model:", error);
@@ -27,21 +27,25 @@ class AIService {
   async findMatches(
     user: User,
     potentialMatches: User[],
-    filterInterests: string[] = []
+    filterInterests: string[] = [],
   ): Promise<MatchRecommendation[]> {
     if (!this.model) {
       console.warn("AI model not initialized, using fallback match algorithm");
-      return this.fallbackMatchAlgorithm(user, potentialMatches, filterInterests);
+      return this.fallbackMatchAlgorithm(
+        user,
+        potentialMatches,
+        filterInterests,
+      );
     }
 
     try {
       // Filter potential matches if specific interests are provided
       let filteredMatches = potentialMatches;
       if (filterInterests.length > 0) {
-        filteredMatches = potentialMatches.filter(match => {
+        filteredMatches = potentialMatches.filter((match) => {
           if (!match.interests) return false;
-          return filterInterests.some(interest => 
-            match.interests && match.interests.includes(interest)
+          return filterInterests.some(
+            (interest) => match.interests && match.interests.includes(interest),
           );
         });
       }
@@ -55,17 +59,17 @@ class AIService {
       const userProfile = {
         goals: user.goals || [],
         interests: user.interests || [],
-        experiences: user.experiences || []
+        experiences: user.experiences || [],
       };
 
-      const potentialMatchesProfiles = filteredMatches.map(match => ({
+      const potentialMatchesProfiles = filteredMatches.map((match) => ({
         id: match.id,
         displayName: match.displayName,
         goals: match.goals || [],
         interests: match.interests || [],
         experiences: match.experiences || [],
         profilePic: match.profilePic,
-        createdAt: match.createdAt?.toISOString()
+        createdAt: match.createdAt?.toISOString(),
       }));
 
       // Craft prompt for the AI
@@ -108,22 +112,30 @@ class AIService {
       const aiRecommendations = JSON.parse(jsonMatch[0]);
 
       // Format and return results
-      return aiRecommendations.map((rec: any) => {
-        const match = filteredMatches.find(m => m.id === rec.userId);
-        if (!match) return null;
+      return aiRecommendations
+        .map((rec: any) => {
+          const match = filteredMatches.find((m) => m.id === rec.userId);
+          if (!match) return null;
 
-        return {
-          userId: match.id,
-          displayName: match.displayName,
-          profilePic: match.profilePic,
-          matchScore: rec.matchScore,
-          sharedInterests: rec.sharedInterests || [],
-          memberSince: match.createdAt ? match.createdAt.toISOString().split('T')[0] : 'recent'
-        };
-      }).filter(Boolean);
+          return {
+            userId: match.id,
+            displayName: match.displayName,
+            profilePic: match.profilePic,
+            matchScore: rec.matchScore,
+            sharedInterests: rec.sharedInterests || [],
+            memberSince: match.createdAt
+              ? match.createdAt.toISOString().split("T")[0]
+              : "recent",
+          };
+        })
+        .filter(Boolean);
     } catch (error) {
       console.error("AI matching error:", error);
-      return this.fallbackMatchAlgorithm(user, potentialMatches, filterInterests);
+      return this.fallbackMatchAlgorithm(
+        user,
+        potentialMatches,
+        filterInterests,
+      );
     }
   }
 
@@ -131,30 +143,34 @@ class AIService {
   private fallbackMatchAlgorithm(
     user: User,
     potentialMatches: User[],
-    filterInterests: string[] = []
+    filterInterests: string[] = [],
   ): MatchRecommendation[] {
-    console.log(`Fallback algorithm called. User ID: ${user.id}, Potential matches: ${potentialMatches.length}, Filter interests: ${filterInterests.join(', ')}`);
-    
+    console.log(
+      `Fallback algorithm called. User ID: ${user.id}, Potential matches: ${potentialMatches.length}, Filter interests: ${filterInterests.join(", ")}`,
+    );
+
     // Validate user
-    if (!user || typeof user.id !== 'number' || isNaN(user.id)) {
+    if (!user || typeof user.id !== "number" || isNaN(user.id)) {
       console.error("Invalid user in fallback algorithm:", user);
       return [];
     }
-    
+
     // Filter by interests if specified
     let filteredMatches = potentialMatches;
     if (filterInterests.length > 0) {
-      console.log(`Filtering matches by interests: ${filterInterests.join(', ')}`);
-      filteredMatches = potentialMatches.filter(match => {
+      console.log(
+        `Filtering matches by interests: ${filterInterests.join(", ")}`,
+      );
+      filteredMatches = potentialMatches.filter((match) => {
         // Skip invalid matches
-        if (!match || typeof match.id !== 'number' || isNaN(match.id)) {
+        if (!match || typeof match.id !== "number" || isNaN(match.id)) {
           console.error("Invalid match found:", match);
           return false;
         }
-        
+
         if (!match.interests) return false;
-        return filterInterests.some(interest => 
-          match.interests && match.interests.includes(interest)
+        return filterInterests.some(
+          (interest) => match.interests && match.interests.includes(interest),
         );
       });
       console.log(`Filtered to ${filteredMatches.length} matches`);
@@ -162,28 +178,28 @@ class AIService {
 
     // Calculate match scores with validation
     const safeRecommendations: MatchRecommendation[] = [];
-    
+
     // Process each potential match
     for (const match of filteredMatches) {
       // Validate match ID
-      if (typeof match.id !== 'number' || isNaN(match.id)) {
-        console.error(`Invalid match ID: ${match.id}, Type: ${typeof match.id}`);
+      if (typeof match.id !== "number" || isNaN(match.id)) {
+        console.error(
+          `Invalid match ID: ${match.id}, Type: ${typeof match.id}`,
+        );
         continue; // Skip this match
       }
-      
+
       // Count shared interests
       const userInterests = user.interests || [];
       const matchInterests = match.interests || [];
-      const sharedInterests = userInterests.filter(interest => 
-        matchInterests.includes(interest)
+      const sharedInterests = userInterests.filter((interest) =>
+        matchInterests.includes(interest),
       );
 
       // Count shared goals
       const userGoals = user.goals || [];
       const matchGoals = match.goals || [];
-      const sharedGoals = userGoals.filter(goal => 
-        matchGoals.includes(goal)
-      );
+      const sharedGoals = userGoals.filter((goal) => matchGoals.includes(goal));
 
       // Calculate score (simple algorithm)
       let score = 0;
@@ -195,9 +211,9 @@ class AIService {
       }
 
       // Add a small random factor (±10%)
-      const randomFactor = 0.9 + (Math.random() * 0.2);
+      const randomFactor = 0.9 + Math.random() * 0.2;
       score = Math.min(100, Math.round(score * randomFactor));
-      
+
       // Validate score
       if (isNaN(score)) {
         console.error("Invalid score calculation:", {
@@ -206,7 +222,7 @@ class AIService {
           sharedInterests: sharedInterests.length,
           userGoals: userGoals.length,
           matchGoals: matchGoals.length,
-          sharedGoals: sharedGoals.length
+          sharedGoals: sharedGoals.length,
         });
         score = 50; // Default fallback score
       }
@@ -215,14 +231,18 @@ class AIService {
       if (score >= 50) {
         const recommendation: MatchRecommendation = {
           userId: match.id,
-          displayName: match.displayName || 'User',
-          profilePic: match.profilePic || '',
+          displayName: match.displayName || "User",
+          profilePic: match.profilePic || "",
           matchScore: score,
           sharedInterests,
-          memberSince: match.createdAt ? match.createdAt.toISOString().split('T')[0] : 'recent'
+          memberSince: match.createdAt
+            ? match.createdAt.toISOString().split("T")[0]
+            : "recent",
         };
-        
-        console.log(`Generated recommendation for user ${match.id}: Score ${score}, Shared interests: ${sharedInterests.length}`);
+
+        console.log(
+          `Generated recommendation for user ${match.id}: Score ${score}, Shared interests: ${sharedInterests.length}`,
+        );
         safeRecommendations.push(recommendation);
       }
     }
