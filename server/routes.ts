@@ -155,92 +155,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/matches/find", ensureAuthenticated, async (req: any, res) => {
     console.log("Entered /api/matches/find handler");
     try {
-      // Validate user ID from session
-      const userId = req.user.id;
-      console.log(`User ID from session: ${userId}, Type: ${typeof userId}`);
+      // Validate user ID from session - ensure it's a valid number
+      const userId = parseInt(req.user.id);
       
-      if (typeof userId !== 'number' || isNaN(userId)) {
-        console.error(`Invalid userId in session: ${userId}`);
+      if (isNaN(userId)) {
+        console.error(`Invalid userId in session: ${req.user.id}`);
         return res.status(400).json({ message: "Invalid user ID" });
       }
       
-      // Log and validate interests
-      const interests = req.query.interests ? decodeURIComponent(req.query.interests as string).split(',') : [];
-      console.log(`Interests from query: ${JSON.stringify(interests)}`);
+      console.log(`User ID validated: ${userId}`);
       
-      if (!Array.isArray(interests)) {
-        console.error(`[${userId}] Invalid interests format received:`, req.query.interests);
-        return res.status(400).json({ message: "Invalid interests format" });
-      }
-      
-      // Get current user
-      console.log(`[${userId}] Getting user details...`);
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        console.log(`[${userId}] User not found.`);
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      console.log(`[${userId}] User details fetched: ${JSON.stringify({
-        id: user.id, 
-        username: user.username,
-        interests: user.interests
-      })}`);
-      
-      // Get all other users
-      console.log(`[${userId}] Getting all other users...`);
-      const allUsers = await storage.getAllUsers();
-      console.log(`[${userId}] All users fetched (${allUsers.length}).`);
-      
-      // Filter out users already matched with
-      console.log(`[${userId}] Getting existing matches...`);
-      const existingMatches = await storage.getUserMatches(userId);
-      console.log(`[${userId}] Existing matches fetched (${existingMatches.length}).`);
-      
-      // Create a Set to store unique matched user IDs (avoids duplicate checks)
-      const existingMatchUserIds = new Set<number>();
-      
-      // Safely process each match to extract other user's ID
-      existingMatches.forEach(match => {
+      // Get interests from query, defaulting to empty array if none provided
+      let interests: string[] = [];
+      if (req.query.interests) {
         try {
-          if (match.userId1 === userId && typeof match.userId2 === 'number') {
-            existingMatchUserIds.add(match.userId2);
-          } else if (match.userId2 === userId && typeof match.userId1 === 'number') {
-            existingMatchUserIds.add(match.userId1);
-          }
-        } catch (error) {
-          console.error("Error processing match:", match, error);
+          interests = decodeURIComponent(req.query.interests as string).split(',');
+        } catch (e) {
+          console.error("Error parsing interests:", e);
+          // Continue with empty interests rather than failing
         }
-      });
-      
-      console.log(`[${userId}] Filtered ${existingMatchUserIds.size} existing match user IDs`);
-      
-      const potentialMatches = allUsers.filter(u => {
-        // Ensure we only consider users with valid IDs
-        if (typeof u.id !== 'number' || isNaN(u.id)) {
-          return false;
-        }
-        // Don't match with yourself and don't match with users you're already matched with
-        return u.id !== userId && !existingMatchUserIds.has(u.id);
-      });
-      
-      if (potentialMatches.length === 0) {
-        return res.status(200).json({ recommendations: [] });
       }
       
-      // Get AI recommendations
-      console.log(`[${userId}] Finding matches for ${potentialMatches.length} potential users with interests: ${interests.join(', ')}`);
-      const recommendations = await aiService.findMatches(
-        user,
-        potentialMatches,
-        interests
-      );
+      console.log(`Interests: ${JSON.stringify(interests)}`);
       
-      res.status(200).json({ recommendations });
+      // Get current user with direct database query for reliability
+      try {
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          console.log(`User not found for ID: ${userId}`);
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        console.log(`User found: ${user.username} (ID: ${user.id})`);
+        
+        // Get users with matching interests - direct approach
+        console.log("Finding potential matches...");
+        let potentialMatches: User[] = [];
+        
+        try {
+          // Get all users
+          const allUsers = await storage.getAllUsers();
+          console.log(`Total users: ${allUsers.length}`);
+          
+          // Get existing matches
+          const existingMatches = await storage.getUserMatches(userId);
+          console.log(`Existing matches: ${existingMatches.length}`);
+          
+          // Extract IDs of users already matched with
+          const matchedUserIds = new Set<number>();
+          
+          for (const match of existingMatches) {
+            if (match.userId1 === userId && typeof match.userId2 === 'number') {
+              matchedUserIds.add(match.userId2);
+            } else if (match.userId2 === userId && typeof match.userId1 === 'number') {
+              matchedUserIds.add(match.userId1);
+            }
+          }
+          
+          console.log(`Already matched with ${matchedUserIds.size} users`);
+          
+          // Filter the users: exclude self and already matched users
+          potentialMatches = allUsers.filter(u => {
+            return u.id !== userId && !matchedUserIds.has(u.id);
+          });
+          
+          console.log(`Found ${potentialMatches.length} potential matches`);
+          
+          if (potentialMatches.length === 0) {
+            return res.status(200).json({ recommendations: [] });
+          }
+          
+          // Manually filter by interests if specified
+          if (interests.length > 0) {
+            potentialMatches = potentialMatches.filter(u => {
+              const userInterests = u.interests || [];
+              return interests.some(interest => userInterests.includes(interest));
+            });
+            
+            console.log(`After interest filtering: ${potentialMatches.length} matches`);
+          }
+          
+          if (potentialMatches.length === 0) {
+            return res.status(200).json({ recommendations: [] });
+          }
+          
+          // Instead of using the AI service directly which might cause errors,
+          // let's handle any potential errors from it
+          let recommendations: MatchRecommendation[] = [];
+          
+          try {
+            recommendations = await aiService.findMatches(user, potentialMatches, interests);
+            console.log(`AI returned ${recommendations.length} recommendations`);
+          } catch (aiError) {
+            console.error("AI matching error:", aiError);
+            
+            // Fall back to simple matching if AI fails
+            recommendations = potentialMatches.map(match => {
+              const sharedInterests = (user.interests || []).filter(i => 
+                (match.interests || []).includes(i)
+              );
+              
+              return {
+                userId: match.id,
+                displayName: match.displayName || 'User',
+                profilePic: match.profilePic || '',
+                matchScore: 70, // Default score when AI fails
+                sharedInterests,
+                memberSince: match.createdAt ? match.createdAt.toISOString().split('T')[0] : 'recent'
+              };
+            });
+          }
+          
+          return res.status(200).json({ recommendations });
+          
+        } catch (matchError) {
+          console.error("Error while finding matches:", matchError);
+          return res.status(500).json({ message: "Error finding matches" });
+        }
+        
+      } catch (userError) {
+        console.error("Error fetching user:", userError);
+        return res.status(500).json({ message: "Error fetching user" });
+      }
+      
     } catch (error: any) {
-      console.error("Error in /api/matches/find:", error);
-      res.status(400).json({ message: error.message });
+      console.error("Unexpected error in /api/matches/find:", error);
+      res.status(500).json({ message: "An unexpected error occurred" });
     }
   });
   
