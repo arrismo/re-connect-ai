@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!apiKey) {
       console.error("GEMINI_API_KEY is not set in environment variables");
     } else {
-      console.log(`GEMINI_API_KEY is set, length: ${apiKey.length}, starts with: ${apiKey.substring(0, 4)}...`);
+      console.log(`GEMINI_API_KEY is set and valid`);
     }
     
     const genAI = new GoogleGenerativeAI(apiKey);

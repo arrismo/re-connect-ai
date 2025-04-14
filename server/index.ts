@@ -23,7 +23,46 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        // Create a sanitized copy to remove sensitive information
+        const sanitizedResponse = JSON.parse(JSON.stringify(capturedJsonResponse));
+        
+        // Sanitize user passwords
+        if (sanitizedResponse.user && sanitizedResponse.user.password) {
+          sanitizedResponse.user.password = "[REDACTED]";
+        }
+        
+        // Sanitize users in arrays
+        if (sanitizedResponse.users && Array.isArray(sanitizedResponse.users)) {
+          sanitizedResponse.users = sanitizedResponse.users.map(user => {
+            if (user && user.password) {
+              return { ...user, password: "[REDACTED]" };
+            }
+            return user;
+          });
+        }
+        
+        // Sanitize matches that may contain user objects
+        if (sanitizedResponse.matches && Array.isArray(sanitizedResponse.matches)) {
+          sanitizedResponse.matches = sanitizedResponse.matches.map(match => {
+            if (match && match.otherUser && match.otherUser.password) {
+              return { 
+                ...match, 
+                otherUser: { ...match.otherUser, password: "[REDACTED]" } 
+              };
+            }
+            return match;
+          });
+        }
+        
+        // Sanitize match object
+        if (sanitizedResponse.match && sanitizedResponse.match.otherUser && sanitizedResponse.match.otherUser.password) {
+          sanitizedResponse.match = {
+            ...sanitizedResponse.match,
+            otherUser: { ...sanitizedResponse.match.otherUser, password: "[REDACTED]" }
+          };
+        }
+        
+        logLine += ` :: ${JSON.stringify(sanitizedResponse)}`;
       }
 
       // Remove length limit to show full logs
