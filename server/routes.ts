@@ -301,6 +301,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "pending"
       });
       
+      // Send WebSocket notification to the match recipient
+      try {
+        // Get requester info
+        const requester = await storage.getUser(userId);
+        
+        // Send notification
+        sendNotification(otherUserId, {
+          type: 'new_match_request',
+          matchId: newMatch.id,
+          userId: requester?.id,
+          displayName: requester?.displayName || 'Someone',
+          profilePic: requester?.profilePic,
+          timestamp: new Date().toISOString()
+        });
+        
+        console.log(`Sent match request notification to user ${otherUserId}`);
+      } catch (notificationError) {
+        // Just log the error, don't fail the request
+        console.error('Failed to send notification:', notificationError);
+      }
+      
       res.status(201).json({ match: newMatch });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -662,6 +683,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create HTTP server
   const httpServer = createServer(app);
+  
+  // Create WebSocket server
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  // Store connected clients by userId
+  const connectedClients = new Map<number, WebSocket>();
+  
+  // Handle WebSocket connections
+  wss.on('connection', (ws) => {
+    let userId: number | null = null;
+    
+    console.log('WebSocket client connected');
+    
+    // Handle messages from clients
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        
+        // Handle authentication
+        if (data.type === 'auth') {
+          userId = Number(data.userId);
+          if (!isNaN(userId)) {
+            connectedClients.set(userId, ws);
+            console.log(`WebSocket: User ${userId} authenticated`);
+            // Send pending matches notification if any
+            sendPendingMatchesUpdate(userId);
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+    
+    // Handle disconnection
+    ws.on('close', () => {
+      if (userId) {
+        connectedClients.delete(userId);
+        console.log(`WebSocket: User ${userId} disconnected`);
+      }
+    });
+  });
+  
+  // Send notification to a specific user
+  function sendNotification(userId: number, notification: any) {
+    const client = connectedClients.get(userId);
+    if (client && client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(notification));
+      return true;
+    }
+    return false;
+  }
+  
+  // Send pending matches update to a user
+  async function sendPendingMatchesUpdate(userId: number) {
+    try {
+      const matches = await storage.getUserMatches(userId);
+      const pendingMatches = matches.filter(match => match.status === 'pending' && match.userId2 === userId);
+      
+      if (pendingMatches.length > 0) {
+        // Get details for each pending match
+        const pendingMatchesWithDetails = await Promise.all(
+          pendingMatches.map(async (match) => {
+            const requester = await storage.getUser(match.userId1);
+            return {
+              matchId: match.id,
+              userId: requester?.id,
+              displayName: requester?.displayName || 'Unknown user',
+              profilePic: requester?.profilePic
+            };
+          })
+        );
+        
+        sendNotification(userId, {
+          type: 'pending_matches',
+          matches: pendingMatchesWithDetails
+        });
+      }
+    } catch (error) {
+      console.error('Error sending pending matches update:', error);
+    }
+  }
+  
+  // We'll modify the original match request endpoint directly in its definition
   
   // Add error handler
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {

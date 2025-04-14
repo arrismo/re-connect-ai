@@ -7,10 +7,10 @@ import {
   MessageSquare,
   Award,
   Settings,
-  Menu,
-  Bell
+  Menu
 } from "lucide-react";
 import { useState } from "react";
+import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 import { Sidebar } from "@/components/ui/sidebar";
 
 interface AppShellProps {
@@ -104,10 +104,7 @@ export default function AppShell({ children }: AppShellProps) {
               {location.substring(1) || "Dashboard"}
             </h2>
             <div className="flex items-center gap-4">
-              <button className="text-neutral-600 relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 bg-red-500 w-2 h-2 rounded-full"></span>
-              </button>
+              <NotificationDropdown />
               <div className="md:hidden w-8 h-8 bg-neutral-200 rounded-full overflow-hidden">
                 {user?.profilePic ? (
                   <img src={user.profilePic} alt="User avatar" className="w-full h-full object-cover" />
