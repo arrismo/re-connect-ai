@@ -58,7 +58,6 @@ export default function Register() {
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
-    displayName: "",
     email: "",
     bio: "",
   });
@@ -112,8 +111,6 @@ export default function Register() {
     
     if (!formData.confirmPassword) newErrors.confirmPassword = "Please confirm your password";
     else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords do not match";
-    
-    if (!formData.displayName) newErrors.displayName = "Display name is required";
     
     if (!formData.email) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Please enter a valid email";
@@ -173,39 +170,21 @@ export default function Register() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="space-y-2 flex-1">
-                    <Label htmlFor="displayName">Display Name</Label>
-                    <Input
-                      id="displayName"
-                      name="displayName"
-                      placeholder="Enter your display name"
-                      value={formData.displayName}
-                      onChange={handleChange}
-                      disabled={auth.registerMutation.isPending}
-                      className={errors.displayName ? "border-destructive" : ""}
-                    />
-                    {errors.displayName && (
-                      <p className="text-sm text-destructive">{errors.displayName}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2 flex-1">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      disabled={auth.registerMutation.isPending}
-                      className={errors.email ? "border-destructive" : ""}
-                    />
-                    {errors.email && (
-                      <p className="text-sm text-destructive">{errors.email}</p>
-                    )}
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={auth.registerMutation.isPending}
+                    className={errors.email ? "border-destructive" : ""}
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-destructive">{errors.email}</p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
