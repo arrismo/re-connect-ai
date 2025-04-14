@@ -153,24 +153,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Find potential matches with AI recommendation
   app.get("/api/matches/find", ensureAuthenticated, async (req: any, res) => {
+    console.log("Entered /api/matches/find handler");
     try {
       const userId = req.user.id;
       const interests = req.query.interests ? decodeURIComponent(req.query.interests as string).split(',') : [];
+      
       if (!Array.isArray(interests)) {
+        console.error(`[${userId}] Invalid interests format received:`, req.query.interests);
         return res.status(400).json({ message: "Invalid interests format" });
       }
       
       // Get current user
+      console.log(`[${userId}] Getting user details...`);
       const user = await storage.getUser(userId);
       if (!user) {
+        console.log(`[${userId}] User not found.`);
         return res.status(404).json({ message: "User not found" });
       }
+      console.log(`[${userId}] User details fetched.`);
       
       // Get all other users
+      console.log(`[${userId}] Getting all other users...`);
       const allUsers = await storage.getAllUsers();
+      console.log(`[${userId}] All users fetched (${allUsers.length}).`);
       
       // Filter out users already matched with
+      console.log(`[${userId}] Getting existing matches...`);
       const existingMatches = await storage.getUserMatches(userId);
+      console.log(`[${userId}] Existing matches fetched (${existingMatches.length}).`);
       const existingMatchUserIds = existingMatches.flatMap(match => 
         [match.userId1, match.userId2]
       ).filter(id => id !== userId);
@@ -184,6 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get AI recommendations
+      console.log(`[${userId}] Finding matches for ${potentialMatches.length} potential users with interests: ${interests.join(', ')}`);
       const recommendations = await aiService.findMatches(
         user,
         potentialMatches,
@@ -192,6 +203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json({ recommendations });
     } catch (error: any) {
+      console.error("Error in /api/matches/find:", error);
       res.status(400).json({ message: error.message });
     }
   });
@@ -408,8 +420,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const otherUserId = match.userId1 === userId ? match.userId2 : match.userId1;
       const partnerProgress = await storage.getChallengeProgress(challengeId, otherUserId);
       
-      if (updatedProgress.stepsCompleted >= challenge.totalSteps && 
-          partnerProgress && partnerProgress.stepsCompleted >= challenge.totalSteps) {
+      // Safely check progress before comparing
+      if (updatedProgress && typeof updatedProgress.stepsCompleted === 'number' && 
+          updatedProgress.stepsCompleted >= challenge.totalSteps && 
+          partnerProgress && typeof partnerProgress.stepsCompleted === 'number' && 
+          partnerProgress.stepsCompleted >= challenge.totalSteps) {
         // Mark challenge as completed
         const completedChallenge = await storage.updateChallengeStatus(challengeId, "completed");
         

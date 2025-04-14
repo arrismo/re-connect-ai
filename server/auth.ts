@@ -97,9 +97,22 @@ export function setupAuth(app: Express) {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const user = await storage.getUser(id);
+      if (typeof id !== 'number' || isNaN(id)) {
+        console.error("Deserialize User: Invalid ID received from session:", id);
+        return done(new Error("Invalid user ID in session"));
+      }
+      let user;
+      try {
+        user = await storage.getUser(id);
+      } catch (dbError) {
+        console.error(`Deserialize User: Error fetching user with ID ${id}:`, dbError);
+        return done(dbError);
+      }
+      
+      console.log(`Deserialize User: Fetched user for ID ${id}:`, user ? user.username : 'Not Found');
       done(null, user);
     } catch (err) {
+      console.error("Deserialize User: Unexpected error:", err);
       done(err);
     }
   });
@@ -134,9 +147,9 @@ export function setupAuth(app: Express) {
         goals: null,
         experiences: null,
         profilePic: null,
-        points: 0,
-        createdAt: new Date(),
-        lastActive: new Date()
+        // points: 0, // Removed: points field is omitted in InsertUser schema and defaults in DB
+        // createdAt: new Date(), // Removed: createdAt field is omitted in InsertUser schema and defaults in DB
+        // lastActive: new Date() // Removed: lastActive field is omitted in InsertUser schema and defaults in DB
       });
 
       // Log in the new user
@@ -152,7 +165,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: Express.User | false, info: { message: string } | undefined) => {
       if (err) {
         return next(err);
       }
