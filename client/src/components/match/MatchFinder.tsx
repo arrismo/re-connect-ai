@@ -45,6 +45,14 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
     queryKey: ['/api/interests'],
   });
   
+  // Get existing matches to check if user already has an active match
+  const { data: matchesData, isLoading: matchesLoading } = useQuery({
+    queryKey: ['/api/matches'],
+  });
+  
+  // Check if the user already has an active match
+  const hasActiveMatch = (matchesData?.matches || []).some((match: any) => match.status === 'active');
+  
   // Find match recommendations
   const { data: recommendationsData, isLoading: recommendationsLoading, refetch } = useQuery<RecommendationsResponse>({
     queryKey: ['/api/matches/find', selectedInterests],

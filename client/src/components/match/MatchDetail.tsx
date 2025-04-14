@@ -1,9 +1,23 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, Calendar, Star, X } from "lucide-react";
+import { Check, Calendar, Star, X, UserX } from "lucide-react";
 import MessageBubble from "@/components/chat/MessageBubble";
 import { Link } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface MatchDetailProps {
   match: {
@@ -42,6 +56,7 @@ interface MatchDetailProps {
 
 export default function MatchDetail({ match, onClose }: MatchDetailProps) {
   const { otherUser, matchScore, matchDetails, challenges, messages } = match;
+  const { toast } = useToast();
   
   // Default values if match details aren't provided
   const goalAlignment = matchDetails?.goalAlignment || 95;
@@ -57,18 +72,73 @@ export default function MatchDetail({ match, onClose }: MatchDetailProps) {
   
   // Get recent messages
   const recentMessages = messages?.slice(0, 2) || [];
+  
+  // Unmatch mutation
+  const unmatchMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("PUT", `/api/matches/${match.id}/unmatch`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Match ended",
+        description: `You are no longer matched with ${otherUser.displayName}.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/matches'] });
+      onClose();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to end match",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <section className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
       <div className="border-b border-neutral-200 p-5">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">Match Details</h2>
-          <button 
-            className="text-neutral-500 hover:text-neutral-700"
-            onClick={onClose}
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-4">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="text-destructive border-destructive hover:bg-destructive/10 flex items-center gap-1"
+                  size="sm"
+                >
+                  <UserX className="h-4 w-4 mr-1" />
+                  Unmatch
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>End this match?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently end your match with {otherUser.displayName}. You'll both be able to find new matches afterward.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    className="bg-destructive hover:bg-destructive/90" 
+                    onClick={() => unmatchMutation.mutate()}
+                    disabled={unmatchMutation.isPending}
+                  >
+                    {unmatchMutation.isPending ? "Ending match..." : "End match"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <button 
+              className="text-neutral-500 hover:text-neutral-700"
+              onClick={onClose}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
       
