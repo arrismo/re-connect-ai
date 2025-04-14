@@ -23,6 +23,102 @@ class AIService {
       this.model = null;
     }
   }
+  
+  async generateAnonymousUsername(interests: string[] = [], characteristics: string[] = []): Promise<string> {
+    if (!this.model) {
+      console.warn("AI model not initialized, using fallback username generation");
+      return this.fallbackUsernameGeneration(interests, characteristics);
+    }
+    
+    try {
+      // Create a prompt that will generate anonymous but meaningful usernames
+      const prompt = `
+        Generate a single anonymous but meaningful username for a person in a support community.
+        
+        ${interests.length > 0 ? `Their interests include: ${interests.join(', ')}` : ''}
+        ${characteristics.length > 0 ? `Their personality traits include: ${characteristics.join(', ')}` : ''}
+        
+        The username should:
+        - Be anonymous (no real names)
+        - Be supportive and positive in tone
+        - Not contain any numbers
+        - Be between 8-15 characters
+        - Not contain inappropriate words
+        - Be a single word or words connected by underscores
+        - Not be generic like "anonymous_user" or "support_seeker"
+        - Be unique and memorable
+        
+        IMPORTANT: You must ONLY return the username as plain text without quotes, explanations, or additional text.
+        DO NOT include any explanations, quotes, or additional text. Just return the username and nothing else.
+      `;
+      
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      let username = response.text().trim();
+      
+      // Remove any quotes or explanations, focusing just on a potential username
+      username = username.replace(/^["']|["']$/g, ''); // Remove surrounding quotes
+      username = username.split(/[\n\r]/)[0]; // Take only the first line
+      
+      // If the username is too long or contains spaces, clean it up
+      if (username.includes(' ')) {
+        username = username.replace(/\s+/g, '_');
+      }
+      
+      // Remove any special characters except underscores
+      username = username.replace(/[^a-zA-Z0-9_]/g, '');
+      
+      // Ensure username is not too long or too short
+      if (username.length > 15) {
+        username = username.substring(0, 15);
+      } else if (username.length < 8) {
+        // Add a suffix to make it longer
+        const suffixes = ['_journey', '_path', '_hope', '_support', '_growth'];
+        username += suffixes[Math.floor(Math.random() * suffixes.length)];
+      }
+      
+      console.log("Generated username:", username);
+      return username;
+    } catch (error) {
+      console.error("Error generating username with AI:", error);
+      return this.fallbackUsernameGeneration(interests, characteristics);
+    }
+  }
+  
+  private fallbackUsernameGeneration(interests: string[] = [], characteristics: string[] = []): string {
+    // Use predefined components to create a username when AI fails
+    const prefixes = ['brave', 'hope', 'healing', 'rising', 'steady', 'growing', 'journey', 'path', 'forward', 'upward'];
+    const suffixes = ['seeker', 'walker', 'traveler', 'fighter', 'supporter', 'believer', 'dreamer', 'achiever'];
+    
+    // Try to incorporate interests if available
+    let interestWord = '';
+    if (interests.length > 0) {
+      const interest = interests[Math.floor(Math.random() * interests.length)].toLowerCase();
+      // Extract a relevant word from the interest (e.g., "Anxiety Management" -> "calm")
+      if (interest.includes('anxiety')) interestWord = 'calm';
+      else if (interest.includes('depression')) interestWord = 'bright';
+      else if (interest.includes('addiction')) interestWord = 'free';
+      else if (interest.includes('stress')) interestWord = 'peace';
+      else if (interest.includes('grief')) interestWord = 'memory';
+      else interestWord = '';
+    }
+    
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+    
+    // Combine components
+    let username = interestWord ? 
+      `${prefix}_${interestWord}_${suffix}` : 
+      `${prefix}_${suffix}`;
+    
+    // Ensure username is not too long
+    if (username.length > 15) {
+      username = `${prefix}_${suffix}`;
+    }
+    
+    console.log("Generated fallback username:", username);
+    return username;
+  }
 
   async findMatches(
     user: User,

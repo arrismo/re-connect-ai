@@ -12,24 +12,92 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, Plus, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { apiRequest } from "@/lib/queryClient";
+
+// Common interest categories
+const SUGGESTED_INTERESTS = [
+  "Anxiety Management",
+  "Depression Support",
+  "Addiction Recovery",
+  "Stress Reduction",
+  "Healthy Habits",
+  "Meditation",
+  "Mindfulness",
+  "Exercise",
+  "Grief Support",
+  "PTSD Support",
+  "ADHD Management",
+  "Sleep Improvement",
+  "Self-care",
+  "Career Goals",
+  "Relationship Building"
+];
+
+// Personality characteristics
+const PERSONALITY_TRAITS = [
+  "Empathetic",
+  "Patient",
+  "Organized",
+  "Supportive",
+  "Motivated",
+  "Creative",
+  "Analytical",
+  "Resilient",
+  "Optimistic",
+  "Detail-oriented",
+  "Communicative",
+  "Focused"
+];
 
 export default function Register() {
   const auth = useAuth();
   const [formData, setFormData] = useState({
-    username: "",
     password: "",
     confirmPassword: "",
     displayName: "",
     email: "",
     bio: "",
   });
+  
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
+  const [customInterest, setCustomInterest] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleInterestSelect = (interest: string) => {
+    if (selectedInterests.includes(interest)) {
+      setSelectedInterests(selectedInterests.filter(i => i !== interest));
+    } else {
+      if (selectedInterests.length < 5) {
+        setSelectedInterests([...selectedInterests, interest]);
+      }
+    }
+  };
+
+  const handleTraitSelect = (trait: string) => {
+    if (selectedTraits.includes(trait)) {
+      setSelectedTraits(selectedTraits.filter(t => t !== trait));
+    } else {
+      if (selectedTraits.length < 3) {
+        setSelectedTraits([...selectedTraits, trait]);
+      }
+    }
+  };
+
+  const handleAddCustomInterest = () => {
+    if (customInterest && !selectedInterests.includes(customInterest) && selectedInterests.length < 5) {
+      setSelectedInterests([...selectedInterests, customInterest]);
+      setCustomInterest("");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,8 +106,6 @@ export default function Register() {
 
     // Basic validation
     const newErrors: Record<string, string> = {};
-    if (!formData.username) newErrors.username = "Username is required";
-    else if (formData.username.length < 3) newErrors.username = "Username must be at least 3 characters";
     
     if (!formData.password) newErrors.password = "Password is required";
     else if (formData.password.length < 6) newErrors.password = "Password must be at least 6 characters";
@@ -52,14 +118,22 @@ export default function Register() {
     if (!formData.email) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Please enter a valid email";
     
+    if (selectedInterests.length === 0) {
+      newErrors.interests = "Please select at least one interest";
+    }
+    
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    // Submit registration
+    // Submit registration with AI-generated username
     const { confirmPassword, ...registrationData } = formData;
-    auth.registerMutation.mutate(registrationData);
+    auth.registerMutation.mutate({
+      ...registrationData,
+      interests: selectedInterests,
+      characteristics: selectedTraits,
+    });
   };
 
   return (
@@ -99,87 +173,137 @@ export default function Register() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="space-y-2 flex-1">
+                    <Label htmlFor="displayName">Display Name</Label>
+                    <Input
+                      id="displayName"
+                      name="displayName"
+                      placeholder="Enter your display name"
+                      value={formData.displayName}
+                      onChange={handleChange}
+                      disabled={auth.registerMutation.isPending}
+                      className={errors.displayName ? "border-destructive" : ""}
+                    />
+                    {errors.displayName && (
+                      <p className="text-sm text-destructive">{errors.displayName}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2 flex-1">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      disabled={auth.registerMutation.isPending}
+                      className={errors.email ? "border-destructive" : ""}
+                    />
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    name="username"
-                    placeholder="Choose a username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    disabled={auth.registerMutation.isPending}
-                    className={errors.username ? "border-destructive" : ""}
-                  />
-                  {errors.username && (
-                    <p className="text-sm text-destructive">{errors.username}</p>
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="interests">Interests (max 5)</Label>
+                    <p className="text-sm text-muted-foreground">{selectedInterests.length}/5 selected</p>
+                  </div>
+                  <div className="border rounded-md p-3 space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedInterests.map((interest) => (
+                        <Badge key={interest} className="text-sm py-1 px-2">
+                          {interest}
+                          <button 
+                            type="button"
+                            onClick={() => handleInterestSelect(interest)} 
+                            className="ml-1 text-primary-foreground hover:text-primary-foreground/80"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Add custom interest"
+                        value={customInterest}
+                        onChange={(e) => setCustomInterest(e.target.value)}
+                        disabled={selectedInterests.length >= 5 || auth.registerMutation.isPending}
+                        className="flex-1"
+                      />
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="outline"
+                        onClick={handleAddCustomInterest}
+                        disabled={!customInterest || selectedInterests.length >= 5 || auth.registerMutation.isPending}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm mb-2">Suggested interests:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {SUGGESTED_INTERESTS.map((interest) => (
+                          <Badge 
+                            key={interest}
+                            className={`cursor-pointer ${selectedInterests.includes(interest) ? 'bg-primary' : 'bg-secondary hover:bg-secondary/80'}`}
+                            onClick={() => handleInterestSelect(interest)}
+                          >
+                            {interest}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {errors.interests && (
+                    <p className="text-sm text-destructive">{errors.interests}</p>
                   )}
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
-                  <Input
-                    id="displayName"
-                    name="displayName"
-                    placeholder="Enter your display name"
-                    value={formData.displayName}
-                    onChange={handleChange}
-                    disabled={auth.registerMutation.isPending}
-                    className={errors.displayName ? "border-destructive" : ""}
-                  />
-                  {errors.displayName && (
-                    <p className="text-sm text-destructive">{errors.displayName}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    disabled={auth.registerMutation.isPending}
-                    className={errors.email ? "border-destructive" : ""}
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-destructive">{errors.email}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="Create a password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    disabled={auth.registerMutation.isPending}
-                    className={errors.password ? "border-destructive" : ""}
-                  />
-                  {errors.password && (
-                    <p className="text-sm text-destructive">{errors.password}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    disabled={auth.registerMutation.isPending}
-                    className={errors.confirmPassword ? "border-destructive" : ""}
-                  />
-                  {errors.confirmPassword && (
-                    <p className="text-sm text-destructive">{errors.confirmPassword}</p>
-                  )}
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="traits">Your Personality Traits (max 3)</Label>
+                    <p className="text-sm text-muted-foreground">{selectedTraits.length}/3 selected</p>
+                  </div>
+                  <div className="border rounded-md p-3 space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTraits.map((trait) => (
+                        <Badge key={trait} variant="outline" className="text-sm py-1 px-2">
+                          {trait}
+                          <button 
+                            type="button"
+                            onClick={() => handleTraitSelect(trait)} 
+                            className="ml-1 text-primary hover:text-primary/80"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    <div>
+                      <div className="flex flex-wrap gap-2">
+                        {PERSONALITY_TRAITS.map((trait) => (
+                          <Badge 
+                            key={trait}
+                            variant="outline"
+                            className={`cursor-pointer ${selectedTraits.includes(trait) ? 'bg-primary/10 border-primary/30' : 'hover:bg-secondary/50'}`}
+                            onClick={() => handleTraitSelect(trait)}
+                          >
+                            {trait}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
@@ -195,9 +319,54 @@ export default function Register() {
                   />
                 </div>
                 
+                <div className="pt-2">
+                  <Label className="text-base font-medium" htmlFor="passwordSection">
+                    Create Password
+                  </Label>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Your username will be generated automatically to maintain anonymity
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        placeholder="Create a password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        disabled={auth.registerMutation.isPending}
+                        className={errors.password ? "border-destructive" : ""}
+                      />
+                      {errors.password && (
+                        <p className="text-sm text-destructive">{errors.password}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        placeholder="Confirm your password"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        disabled={auth.registerMutation.isPending}
+                        className={errors.confirmPassword ? "border-destructive" : ""}
+                      />
+                      {errors.confirmPassword && (
+                        <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
                 <Button
                   type="submit"
-                  className="w-full"
+                  className="w-full mt-6"
                   disabled={auth.registerMutation.isPending}
                 >
                   {auth.registerMutation.isPending ? (

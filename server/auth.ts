@@ -128,22 +128,44 @@ export function setupAuth(app: Express) {
   // Register API routes
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, displayName, email } = req.body;
+      const { password, displayName, email, interests, characteristics } = req.body;
       
       // Validate required fields
-      if (!username || !password || !displayName || !email) {
+      if (!password || !displayName || !email) {
         return res.status(400).json({ 
-          message: "All fields are required: username, password, displayName, email" 
+          message: "Required fields: password, displayName, email" 
         });
       }
 
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(username);
+      // Generate anonymous username using Gemini AI
+      const interestsArray = Array.isArray(interests) ? interests : [];
+      const characteristicsArray = Array.isArray(characteristics) ? characteristics : [];
+      
+      // Import aiService for generating anonymous username
+      const { aiService } = await import('./ai');
+      const generatedUsername = await aiService.generateAnonymousUsername(interestsArray, characteristicsArray);
+      
+      // Ensure the generated username is unique by adding a random suffix if needed
+      let username = generatedUsername;
+      let counter = 0;
+      let existingUser = await storage.getUserByUsername(username);
+      
+      while (existingUser && counter < 5) {
+        // Add random suffix to make username unique
+        const randomSuffix = Math.floor(Math.random() * 1000).toString();
+        username = `${generatedUsername.substring(0, 12)}_${randomSuffix}`;
+        existingUser = await storage.getUserByUsername(username);
+        counter++;
+      }
+      
       if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
+        // If still not unique after 5 attempts, create a completely random one
+        username = `anon_${Math.random().toString(36).substring(2, 10)}`;
       }
 
-      // Create new user
+      console.log(`Generated anonymous username: ${username} for user ${displayName}`);
+
+      // Create new user with the generated username
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         username,
@@ -151,13 +173,10 @@ export function setupAuth(app: Express) {
         displayName,
         email,
         bio: null,
-        interests: null,
+        interests: interestsArray.length > 0 ? interestsArray : null,
         goals: null,
         experiences: null,
         profilePic: null,
-        // points: 0, // Removed: points field is omitted in InsertUser schema and defaults in DB
-        // createdAt: new Date(), // Removed: createdAt field is omitted in InsertUser schema and defaults in DB
-        // lastActive: new Date() // Removed: lastActive field is omitted in InsertUser schema and defaults in DB
       });
 
       // Log in the new user
@@ -168,6 +187,7 @@ export function setupAuth(app: Express) {
         res.status(201).json(userWithoutPassword);
       });
     } catch (err) {
+      console.error("Registration error:", err);
       next(err);
     }
   });
