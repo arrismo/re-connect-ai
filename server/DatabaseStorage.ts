@@ -246,6 +246,158 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedProgress;
   }
+  
+  // Sobriety tracking methods
+  async updateDaysSober(challengeId: number, userId: number, daysSober: number): Promise<ChallengeProgress> {
+    const [updatedProgress] = await db
+      .update(challengeProgresses)
+      .set({ 
+        daysSober,
+        lastSoberDate: new Date(),
+        lastUpdated: new Date()
+      })
+      .where(
+        and(
+          eq(challengeProgresses.challengeId, challengeId),
+          eq(challengeProgresses.userId, userId)
+        )
+      )
+      .returning();
+    return updatedProgress;
+  }
+  
+  async resetDaysSober(challengeId: number, userId: number): Promise<ChallengeProgress> {
+    const [updatedProgress] = await db
+      .update(challengeProgresses)
+      .set({ 
+        daysSober: 0,
+        lastUpdated: new Date()
+      })
+      .where(
+        and(
+          eq(challengeProgresses.challengeId, challengeId),
+          eq(challengeProgresses.userId, userId)
+        )
+      )
+      .returning();
+    return updatedProgress;
+  }
+  
+  // Check-in streak methods
+  async recordCheckIn(challengeId: number, userId: number): Promise<ChallengeProgress> {
+    // First get the current progress
+    const [progress] = await db
+      .select()
+      .from(challengeProgresses)
+      .where(
+        and(
+          eq(challengeProgresses.challengeId, challengeId),
+          eq(challengeProgresses.userId, userId)
+        )
+      );
+    
+    const now = new Date();
+    
+    // Calculate the new streak values
+    let currentStreak = progress?.currentStreak || 0;
+    let longestStreak = progress?.longestStreak || 0;
+    
+    const lastCheckIn = progress?.lastCheckIn ? new Date(progress.lastCheckIn) : null;
+    
+    if (lastCheckIn) {
+      const hoursSinceLastCheckIn = (now.getTime() - lastCheckIn.getTime()) / (1000 * 60 * 60);
+      
+      // If check-in is within the valid window (20-36 hours), increment streak
+      if (hoursSinceLastCheckIn >= 20 && hoursSinceLastCheckIn <= 36) {
+        currentStreak += 1;
+        if (currentStreak > longestStreak) {
+          longestStreak = currentStreak;
+        }
+      } else if (hoursSinceLastCheckIn > 36) {
+        // Streak broken if more than 36 hours have passed
+        currentStreak = 1;
+      }
+      // If less than 20 hours, it's too soon but we'll allow it without incrementing
+    } else {
+      // First check-in
+      currentStreak = 1;
+      longestStreak = 1;
+    }
+    
+    // Update the progress record
+    const stepsCompleted = (progress?.stepsCompleted || 0) + 1;
+    
+    const [updatedProgress] = await db
+      .update(challengeProgresses)
+      .set({ 
+        stepsCompleted,
+        currentStreak,
+        longestStreak,
+        lastCheckIn: now,
+        lastUpdated: now
+      })
+      .where(
+        and(
+          eq(challengeProgresses.challengeId, challengeId),
+          eq(challengeProgresses.userId, userId)
+        )
+      )
+      .returning();
+    
+    return updatedProgress;
+  }
+  
+  async getCheckInStreak(challengeId: number, userId: number): Promise<{currentStreak: number, longestStreak: number}> {
+    const [progress] = await db
+      .select()
+      .from(challengeProgresses)
+      .where(
+        and(
+          eq(challengeProgresses.challengeId, challengeId),
+          eq(challengeProgresses.userId, userId)
+        )
+      );
+    
+    if (!progress) {
+      return {
+        currentStreak: 0,
+        longestStreak: 0
+      };
+    }
+    
+    // Check if the streak is still valid
+    const now = new Date();
+    const lastCheckIn = progress.lastCheckIn ? new Date(progress.lastCheckIn) : null;
+    let currentStreak = progress.currentStreak || 0;
+    
+    if (lastCheckIn) {
+      const hoursSinceLastCheckIn = (now.getTime() - lastCheckIn.getTime()) / (1000 * 60 * 60);
+      
+      // If more than 36 hours have passed, streak is broken
+      if (hoursSinceLastCheckIn > 36) {
+        currentStreak = 0;
+        
+        // Update the stored value
+        await db
+          .update(challengeProgresses)
+          .set({ 
+            currentStreak: 0,
+            lastUpdated: now
+          })
+          .where(
+            and(
+              eq(challengeProgresses.challengeId, challengeId),
+              eq(challengeProgresses.userId, userId)
+            )
+          );
+      }
+    }
+    
+    return {
+      currentStreak,
+      longestStreak: progress.longestStreak || 0
+    };
+  }
 
   // Message related methods
   async getMatchMessages(matchId: number): Promise<Message[]> {

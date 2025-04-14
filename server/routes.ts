@@ -13,7 +13,8 @@ import {
   insertAchievementSchema,
   insertInterestSchema,
   User,
-  Match
+  Match,
+  InsertChallengeProgress
 } from "@shared/schema";
 import { MatchRecommendation } from "./ai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -492,21 +493,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have access to this match" });
       }
       
-      // Create challenge
-      const newChallenge = await storage.createChallenge(challengeData);
+      // Create challenge with type-specific configurations
+      const challengeType = challengeData.challengeType || 'generic';
       
-      // Initialize progress tracking for both users
-      await storage.createChallengeProgress({
+      // Set up different defaults based on challenge type
+      let enrichedChallengeData = { ...challengeData };
+      
+      if (challengeType === 'days_sober') {
+        // For sobriety challenges, set appropriate title and description if not provided
+        if (!enrichedChallengeData.title) {
+          enrichedChallengeData.title = "Sobriety Challenge";
+        }
+        if (!enrichedChallengeData.description) {
+          enrichedChallengeData.description = "Track days of sobriety and support each other in this journey.";
+        }
+        // Default to 4 steps (7 days, 30 days, 90 days, 365 days milestones)
+        if (!enrichedChallengeData.totalSteps) {
+          enrichedChallengeData.totalSteps = 4;
+        }
+      } 
+      else if (challengeType === 'check_in_streak') {
+        // For check-in streak challenges, set appropriate defaults
+        if (!enrichedChallengeData.title) {
+          enrichedChallengeData.title = "Check-in Streak Challenge";
+        }
+        if (!enrichedChallengeData.description) {
+          enrichedChallengeData.description = "Daily check-ins with your accountability partner. Build consistency together!";
+        }
+        // Default to 3 steps (7 days, 30 days, 100 days milestones)
+        if (!enrichedChallengeData.totalSteps) {
+          enrichedChallengeData.totalSteps = 3;
+        }
+      }
+      
+      // Create the challenge
+      const newChallenge = await storage.createChallenge(enrichedChallengeData);
+      
+      // Initialize progress tracking for both users with type-specific initializations
+      const progressInit1: Partial<InsertChallengeProgress> = {
         challengeId: newChallenge.id,
         userId: match.userId1,
         stepsCompleted: 0
-      });
+      };
       
-      await storage.createChallengeProgress({
+      const progressInit2: Partial<InsertChallengeProgress> = {
         challengeId: newChallenge.id,
         userId: match.userId2,
         stepsCompleted: 0
-      });
+      };
+      
+      // Add specific fields based on challenge type
+      if (challengeType === 'days_sober') {
+        progressInit1.daysSober = 0;
+        progressInit2.daysSober = 0;
+      } 
+      else if (challengeType === 'check_in_streak') {
+        progressInit1.currentStreak = 0;
+        progressInit1.longestStreak = 0;
+        progressInit2.currentStreak = 0;
+        progressInit2.longestStreak = 0;
+      }
+      
+      await storage.createChallengeProgress(progressInit1 as InsertChallengeProgress);
+      await storage.createChallengeProgress(progressInit2 as InsertChallengeProgress);
       
       res.status(201).json({ challenge: newChallenge });
     } catch (error: any) {
@@ -597,6 +646,281 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Track days sober for a challenge
+  app.put("/api/challenges/:id/sobriety", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      const { daysSober } = z.object({
+        daysSober: z.number().min(0)
+      }).parse(req.body);
+      
+      const userId = req.user.id;
+      
+      // Check if challenge exists and is of the right type
+      const challenge = await storage.getChallenge(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+      
+      if (challenge.challengeType !== "days_sober") {
+        return res.status(400).json({ message: "This is not a sobriety tracking challenge" });
+      }
+      
+      // Check if user is part of the match
+      const match = await storage.getMatch(challenge.matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+      
+      if (match.userId1 !== userId && match.userId2 !== userId) {
+        return res.status(403).json({ message: "You don't have access to this challenge" });
+      }
+      
+      // Update sobriety days
+      const updatedProgress = await storage.updateDaysSober(
+        challengeId,
+        userId,
+        daysSober
+      );
+      
+      // Check for achievements
+      let achievement = null;
+      
+      // Award achievements for milestones (7, 30, 90, 365 days)
+      if (daysSober >= 7 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 1)) {
+        achievement = await storage.createAchievement({
+          userId,
+          type: "sobriety",
+          title: "One Week Sober",
+          description: "Maintained sobriety for 7 days",
+          points: 50
+        });
+        
+        await storage.updateChallengeProgress(challengeId, userId, 1);
+        await storage.addUserPoints(userId, 50);
+      } 
+      else if (daysSober >= 30 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 2)) {
+        achievement = await storage.createAchievement({
+          userId,
+          type: "sobriety",
+          title: "One Month Sober",
+          description: "Maintained sobriety for 30 days",
+          points: 100
+        });
+        
+        await storage.updateChallengeProgress(challengeId, userId, 2);
+        await storage.addUserPoints(userId, 100);
+      }
+      else if (daysSober >= 90 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 3)) {
+        achievement = await storage.createAchievement({
+          userId,
+          type: "sobriety",
+          title: "Three Months Sober",
+          description: "Maintained sobriety for 90 days",
+          points: 200
+        });
+        
+        await storage.updateChallengeProgress(challengeId, userId, 3);
+        await storage.addUserPoints(userId, 200);
+      }
+      else if (daysSober >= 365 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 4)) {
+        achievement = await storage.createAchievement({
+          userId,
+          type: "sobriety",
+          title: "One Year Sober",
+          description: "Maintained sobriety for 365 days",
+          points: 500
+        });
+        
+        await storage.updateChallengeProgress(challengeId, userId, 4);
+        await storage.addUserPoints(userId, 500);
+        
+        // Mark challenge as completed if this was the goal
+        if (challenge.totalSteps <= 4) {
+          await storage.updateChallengeStatus(challengeId, "completed");
+        }
+      }
+      
+      res.status(200).json({ 
+        progress: updatedProgress,
+        achievement
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Reset sobriety counter
+  app.post("/api/challenges/:id/sobriety/reset", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      // Check if challenge exists and is of the right type
+      const challenge = await storage.getChallenge(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+      
+      if (challenge.challengeType !== "days_sober") {
+        return res.status(400).json({ message: "This is not a sobriety tracking challenge" });
+      }
+      
+      // Check if user is part of the match
+      const match = await storage.getMatch(challenge.matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+      
+      if (match.userId1 !== userId && match.userId2 !== userId) {
+        return res.status(403).json({ message: "You don't have access to this challenge" });
+      }
+      
+      // Reset sobriety counter
+      const updatedProgress = await storage.resetDaysSober(challengeId, userId);
+      
+      res.status(200).json({ progress: updatedProgress });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Record a check-in for a streak challenge
+  app.post("/api/challenges/:id/check-in", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      // Check if challenge exists and is of the right type
+      const challenge = await storage.getChallenge(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+      
+      if (challenge.challengeType !== "check_in_streak") {
+        return res.status(400).json({ message: "This is not a check-in streak challenge" });
+      }
+      
+      // Check if user is part of the match
+      const match = await storage.getMatch(challenge.matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+      
+      if (match.userId1 !== userId && match.userId2 !== userId) {
+        return res.status(403).json({ message: "You don't have access to this challenge" });
+      }
+      
+      // Record check-in
+      const updatedProgress = await storage.recordCheckIn(challengeId, userId);
+      
+      // Check for streak achievements
+      let achievement = null;
+      
+      if (updatedProgress.currentStreak >= 7 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 1)) {
+        achievement = await storage.createAchievement({
+          userId,
+          type: "streak",
+          title: "7-Day Streak",
+          description: "Checked in for 7 consecutive days",
+          points: 50
+        });
+        
+        await storage.updateChallengeProgress(challengeId, userId, 1);
+        await storage.addUserPoints(userId, 50);
+      }
+      else if (updatedProgress.currentStreak >= 30 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 2)) {
+        achievement = await storage.createAchievement({
+          userId,
+          type: "streak",
+          title: "30-Day Streak",
+          description: "Checked in for 30 consecutive days",
+          points: 150
+        });
+        
+        await storage.updateChallengeProgress(challengeId, userId, 2);
+        await storage.addUserPoints(userId, 150);
+      }
+      else if (updatedProgress.currentStreak >= 100 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 3)) {
+        achievement = await storage.createAchievement({
+          userId,
+          type: "streak",
+          title: "100-Day Streak",
+          description: "Checked in for 100 consecutive days",
+          points: 300
+        });
+        
+        await storage.updateChallengeProgress(challengeId, userId, 3);
+        await storage.addUserPoints(userId, 300);
+        
+        // Mark challenge as completed if this was the goal
+        if (challenge.totalSteps <= 3) {
+          await storage.updateChallengeStatus(challengeId, "completed");
+        }
+      }
+      
+      // Notify match partner of check-in via WebSocket
+      const otherUserId = match.userId1 === userId ? match.userId2 : match.userId1;
+      const user = await storage.getUser(userId);
+      
+      if (user) {
+        sendNotification(otherUserId, {
+          type: 'partner_check_in',
+          challengeId: challenge.id,
+          userId: user.id,
+          displayName: user.displayName,
+          profilePic: user.profilePic,
+          streak: updatedProgress.currentStreak,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      res.status(200).json({ 
+        progress: updatedProgress,
+        achievement
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  
+  // Get check-in streak information
+  app.get("/api/challenges/:id/streak", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      // Check if challenge exists
+      const challenge = await storage.getChallenge(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+      
+      // Check if user is part of the match
+      const match = await storage.getMatch(challenge.matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+      
+      if (match.userId1 !== userId && match.userId2 !== userId) {
+        return res.status(403).json({ message: "You don't have access to this challenge" });
+      }
+      
+      const otherUserId = match.userId1 === userId ? match.userId2 : match.userId1;
+      
+      // Get streak information for both users
+      const userStreak = await storage.getCheckInStreak(challengeId, userId);
+      const partnerStreak = await storage.getCheckInStreak(challengeId, otherUserId);
+      
+      res.status(200).json({ 
+        user: userStreak,
+        partner: partnerStreak
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   // ================== MESSAGE ROUTES ==================
   
   // Get messages for a match
