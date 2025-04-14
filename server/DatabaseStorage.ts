@@ -165,10 +165,26 @@ export class DatabaseStorage implements IStorage {
   async getUserChallenges(matchIds: number[]): Promise<Challenge[]> {
     if (matchIds.length === 0) return [];
     
-    return db
-      .select()
-      .from(challenges)
-      .where(sql`${challenges.matchId} IN (${matchIds.join(',')})`);
+    // Filter out any non-numeric or NaN IDs
+    const validMatchIds = matchIds.filter(id => 
+      typeof id === 'number' && !isNaN(id)
+    );
+    
+    if (validMatchIds.length === 0) return [];
+    
+    // Use a safe parameterized query with SQL template literals
+    const safeList = validMatchIds.join(',');
+    console.log(`Getting challenges for match IDs: ${safeList}`);
+    
+    try {
+      return db
+        .select()
+        .from(challenges)
+        .where(sql`${challenges.matchId} IN (${safeList})`);
+    } catch (error) {
+      console.error(`Error in getUserChallenges: ${error}`);
+      return [];
+    }
   }
 
   async createChallenge(challengeData: InsertChallenge): Promise<Challenge> {
