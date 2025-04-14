@@ -82,8 +82,78 @@ export default function Challenges() {
     },
   });
   
+  // Sobriety update mutation
+  const updateSobrietyMutation = useMutation({
+    mutationFn: async ({ challengeId, daysSober }: { challengeId: number, daysSober: number }) => {
+      const response = await apiRequest("PUT", `/api/challenges/${challengeId}/sobriety`, { daysSober });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/challenges'] });
+      if (data.achievement) {
+        toast({
+          title: "Achievement Unlocked!",
+          description: `${data.achievement.title} (+${data.achievement.points} points)`,
+          variant: "success",
+        });
+      }
+    },
+  });
+  
+  // Reset sobriety counter mutation
+  const resetSobrietyMutation = useMutation({
+    mutationFn: async (challengeId: number) => {
+      const response = await apiRequest("POST", `/api/challenges/${challengeId}/sobriety/reset`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/challenges'] });
+      toast({
+        title: "Sobriety Counter Reset",
+        description: "Your sobriety counter has been reset. Don't give up!",
+        variant: "default",
+      });
+    },
+  });
+  
+  // Check-in streak mutation
+  const checkInMutation = useMutation({
+    mutationFn: async (challengeId: number) => {
+      const response = await apiRequest("POST", `/api/challenges/${challengeId}/check-in`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/challenges'] });
+      if (data.achievement) {
+        toast({
+          title: "Achievement Unlocked!",
+          description: `${data.achievement.title} (+${data.achievement.points} points)`,
+          variant: "success",
+        });
+      } else {
+        toast({
+          title: "Check-In Recorded",
+          description: `Your streak is now ${data.progress.currentStreak} days!`,
+          variant: "success",
+        });
+      }
+    },
+  });
+  
   const handleUpdateProgress = (challengeId: number, stepsCompleted: number) => {
     updateProgressMutation.mutate({ challengeId, stepsCompleted });
+  };
+  
+  const handleSobrietyUpdate = (challengeId: number, daysSober: number) => {
+    updateSobrietyMutation.mutate({ challengeId, daysSober });
+  };
+  
+  const handleSobrietyReset = (challengeId: number) => {
+    resetSobrietyMutation.mutate(challengeId);
+  };
+  
+  const handleCheckIn = (challengeId: number) => {
+    checkInMutation.mutate(challengeId);
   };
 
   return (
