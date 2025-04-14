@@ -77,26 +77,32 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      try {
-        const user = await storage.getUserByUsername(username);
-        if (!user) {
-          return done(null, false, { message: "Incorrect username" });
+    new LocalStrategy(
+      {
+        usernameField: 'email',  // Use email field instead of username
+        passwordField: 'password'
+      },
+      async (email, password, done) => {
+        try {
+          const user = await storage.getUserByEmail(email);
+          if (!user) {
+            return done(null, false, { message: "Incorrect email" });
+          }
+          
+          const validPassword = await comparePasswords(password, user.password);
+          if (!validPassword) {
+            return done(null, false, { message: "Incorrect password" });
+          }
+          
+          // Update last active timestamp
+          await storage.updateUserLastActive(user.id);
+          
+          return done(null, user);
+        } catch (err) {
+          return done(err);
         }
-        
-        const validPassword = await comparePasswords(password, user.password);
-        if (!validPassword) {
-          return done(null, false, { message: "Incorrect password" });
-        }
-        
-        // Update last active timestamp
-        await storage.updateUserLastActive(user.id);
-        
-        return done(null, user);
-      } catch (err) {
-        return done(err);
       }
-    }),
+    ),
   );
 
   passport.serializeUser((user, done) => {
@@ -196,7 +202,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    console.log("Login attempt:", req.body.username);
+    console.log("Login attempt:", req.body.email);
     
     passport.authenticate("local", (err: any, user: Express.User | false, info: { message: string } | undefined) => {
       if (err) {

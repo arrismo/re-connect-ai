@@ -16,7 +16,7 @@ import { Loader2 } from "lucide-react";
 
 export default function Login() {
   const auth = useAuth();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -26,7 +26,7 @@ export default function Login() {
 
     // Basic validation
     const newErrors: Record<string, string> = {};
-    if (!username) newErrors.username = "Username is required";
+    if (!email) newErrors.email = "Email is required";
     if (!password) newErrors.password = "Password is required";
     
     if (Object.keys(newErrors).length > 0) {
@@ -38,11 +38,11 @@ export default function Login() {
     try {
       // Use the auth context login method
       auth.loginMutation.mutate(
-        { username, password },
+        { email, password },
         {
           onError: (error) => {
             console.error("Login error:", error);
-            setErrors({ form: error.message || "Login failed. Please check your username and password." });
+            setErrors({ form: error.message || "Login failed. Please check your email and password." });
           }
         }
       );
@@ -67,17 +67,18 @@ export default function Login() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="username"
-                    placeholder="Enter your username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     disabled={auth.loginMutation.isPending}
-                    className={errors.username ? "border-destructive" : ""}
+                    className={errors.email ? "border-destructive" : ""}
                   />
-                  {errors.username && (
-                    <p className="text-sm text-destructive">{errors.username}</p>
+                  {errors.email && (
+                    <p className="text-sm text-destructive">{errors.email}</p>
                   )}
                 </div>
                 <div className="space-y-2">
