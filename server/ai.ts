@@ -133,19 +133,44 @@ class AIService {
     potentialMatches: User[],
     filterInterests: string[] = []
   ): MatchRecommendation[] {
+    console.log(`Fallback algorithm called. User ID: ${user.id}, Potential matches: ${potentialMatches.length}, Filter interests: ${filterInterests.join(', ')}`);
+    
+    // Validate user
+    if (!user || typeof user.id !== 'number' || isNaN(user.id)) {
+      console.error("Invalid user in fallback algorithm:", user);
+      return [];
+    }
+    
     // Filter by interests if specified
     let filteredMatches = potentialMatches;
     if (filterInterests.length > 0) {
+      console.log(`Filtering matches by interests: ${filterInterests.join(', ')}`);
       filteredMatches = potentialMatches.filter(match => {
+        // Skip invalid matches
+        if (!match || typeof match.id !== 'number' || isNaN(match.id)) {
+          console.error("Invalid match found:", match);
+          return false;
+        }
+        
         if (!match.interests) return false;
         return filterInterests.some(interest => 
           match.interests && match.interests.includes(interest)
         );
       });
+      console.log(`Filtered to ${filteredMatches.length} matches`);
     }
 
-    // Calculate match scores
-    const recommendations = filteredMatches.map(match => {
+    // Calculate match scores with validation
+    const safeRecommendations: MatchRecommendation[] = [];
+    
+    // Process each potential match
+    for (const match of filteredMatches) {
+      // Validate match ID
+      if (typeof match.id !== 'number' || isNaN(match.id)) {
+        console.error(`Invalid match ID: ${match.id}, Type: ${typeof match.id}`);
+        continue; // Skip this match
+      }
+      
       // Count shared interests
       const userInterests = user.interests || [];
       const matchInterests = match.interests || [];
@@ -172,21 +197,38 @@ class AIService {
       // Add a small random factor (±10%)
       const randomFactor = 0.9 + (Math.random() * 0.2);
       score = Math.min(100, Math.round(score * randomFactor));
+      
+      // Validate score
+      if (isNaN(score)) {
+        console.error("Invalid score calculation:", {
+          userInterests: userInterests.length,
+          matchInterests: matchInterests.length,
+          sharedInterests: sharedInterests.length,
+          userGoals: userGoals.length,
+          matchGoals: matchGoals.length,
+          sharedGoals: sharedGoals.length
+        });
+        score = 50; // Default fallback score
+      }
 
-      return {
-        userId: match.id,
-        displayName: match.displayName,
-        profilePic: match.profilePic,
-        matchScore: score,
-        sharedInterests,
-        memberSince: match.createdAt ? match.createdAt.toISOString().split('T')[0] : 'recent'
-      };
-    });
+      // Only add if score is at least 50
+      if (score >= 50) {
+        const recommendation: MatchRecommendation = {
+          userId: match.id,
+          displayName: match.displayName || 'User',
+          profilePic: match.profilePic || '',
+          matchScore: score,
+          sharedInterests,
+          memberSince: match.createdAt ? match.createdAt.toISOString().split('T')[0] : 'recent'
+        };
+        
+        console.log(`Generated recommendation for user ${match.id}: Score ${score}, Shared interests: ${sharedInterests.length}`);
+        safeRecommendations.push(recommendation);
+      }
+    }
 
-    // Filter by minimum score and sort
-    return recommendations
-      .filter(rec => rec.matchScore >= 50)
-      .sort((a, b) => b.matchScore - a.matchScore);
+    // Sort by match score (highest first)
+    return safeRecommendations.sort((a, b) => b.matchScore - a.matchScore);
   }
 }
 

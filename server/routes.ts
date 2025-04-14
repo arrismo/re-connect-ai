@@ -155,8 +155,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/matches/find", ensureAuthenticated, async (req: any, res) => {
     console.log("Entered /api/matches/find handler");
     try {
+      // Validate user ID from session
       const userId = req.user.id;
+      console.log(`User ID from session: ${userId}, Type: ${typeof userId}`);
+      
+      if (typeof userId !== 'number' || isNaN(userId)) {
+        console.error(`Invalid userId in session: ${userId}`);
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Log and validate interests
       const interests = req.query.interests ? decodeURIComponent(req.query.interests as string).split(',') : [];
+      console.log(`Interests from query: ${JSON.stringify(interests)}`);
       
       if (!Array.isArray(interests)) {
         console.error(`[${userId}] Invalid interests format received:`, req.query.interests);
@@ -166,11 +176,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get current user
       console.log(`[${userId}] Getting user details...`);
       const user = await storage.getUser(userId);
+      
       if (!user) {
         console.log(`[${userId}] User not found.`);
         return res.status(404).json({ message: "User not found" });
       }
-      console.log(`[${userId}] User details fetched.`);
+      
+      console.log(`[${userId}] User details fetched: ${JSON.stringify({
+        id: user.id, 
+        username: user.username,
+        interests: user.interests
+      })}`);
       
       // Get all other users
       console.log(`[${userId}] Getting all other users...`);
