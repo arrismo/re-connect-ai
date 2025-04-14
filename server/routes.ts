@@ -132,49 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get a single match
-  app.get("/api/matches/:id", ensureAuthenticated, async (req: any, res) => {
-    try {
-      const matchId = parseInt(req.params.id);
-      const match = await storage.getMatch(matchId);
-      
-      if (!match) {
-        return res.status(404).json({ message: "Match not found" });
-      }
-      
-      // Check if user is part of the match
-      if (match.userId1 !== req.user.id && match.userId2 !== req.user.id) {
-        return res.status(403).json({ message: "You don't have access to this match" });
-      }
-      
-      // Get other user details
-      const otherUserId = match.userId1 === req.user.id ? match.userId2 : match.userId1;
-      const otherUser = await storage.getUser(otherUserId);
-      
-      // Get challenges for this match
-      const challenges = await storage.getMatchChallenges(matchId);
-      
-      // Get recent messages
-      const messages = await storage.getRecentMatchMessages(matchId, 20);
-      
-      if (!otherUser) {
-        return res.status(404).json({ message: "Match user not found" });
-      }
-      
-      res.status(200).json({ 
-        match: {
-          ...match,
-          otherUser: { ...otherUser, password: undefined },
-          challenges,
-          messages
-        } 
-      });
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
-  
-  // Find potential matches with AI recommendation
+  // Find potential matches with AI recommendation - IMPORTANT: this must be placed BEFORE the :id route to avoid conflict
   app.get("/api/matches/find", ensureAuthenticated, async (req: any, res) => {
     console.log("Entered /api/matches/find handler");
     try {
@@ -340,6 +298,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get a single match
+  app.get("/api/matches/:id", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const matchId = parseInt(req.params.id);
+      const match = await storage.getMatch(matchId);
+      
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+      
+      // Check if user is part of the match
+      if (match.userId1 !== req.user.id && match.userId2 !== req.user.id) {
+        return res.status(403).json({ message: "You don't have access to this match" });
+      }
+      
+      // Get other user details
+      const otherUserId = match.userId1 === req.user.id ? match.userId2 : match.userId1;
+      const otherUser = await storage.getUser(otherUserId);
+      
+      // Get challenges for this match
+      const challenges = await storage.getMatchChallenges(matchId);
+      
+      // Get recent messages
+      const messages = await storage.getRecentMatchMessages(matchId, 20);
+      
+      if (!otherUser) {
+        return res.status(404).json({ message: "Match user not found" });
+      }
+      
+      res.status(200).json({ 
+        match: {
+          ...match,
+          otherUser: { ...otherUser, password: undefined },
+          challenges,
+          messages
+        } 
+      });
+    } catch (error: any) {
+      logError("Error getting match details", error, req);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   // Accept/Reject a match request
   app.put("/api/matches/:id/status", ensureAuthenticated, async (req: any, res) => {
     try {
