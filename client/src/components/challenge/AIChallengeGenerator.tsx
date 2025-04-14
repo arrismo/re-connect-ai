@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Loader2, Sparkles } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, Loader2 } from "lucide-react";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface AIChallengeGeneratorProps {
   matchId: number;
@@ -20,143 +22,139 @@ interface AIChallengeGeneratorProps {
 }
 
 export function AIChallengeGenerator({ matchId, onChallengeSelected }: AIChallengeGeneratorProps) {
-  const [open, setOpen] = useState(false);
-  const [promptInput, setPromptInput] = useState('');
-  const [generatedChallenges, setGeneratedChallenges] = useState<any[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { toast } = useToast();
 
-  const generateMutation = useMutation({
-    mutationFn: async (prompt: string) => {
-      const res = await apiRequest('POST', '/api/challenges/generate', { 
-        prompt,
-        matchId
-      });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.challenges && data.challenges.length > 0) {
-        setGeneratedChallenges(data.challenges);
-      } else {
-        toast({
-          title: 'No challenges generated',
-          description: 'Try providing more details about what you\'re looking for',
-          variant: 'destructive'
-        });
+  const generateChallenges = async () => {
+    setIsLoading(true);
+    setChallenges([]);
+    setSelectedIndex(null);
+    
+    try {
+      const response = await apiRequest(
+        "POST", 
+        "/api/challenges/generate", 
+        { matchId }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Failed to generate challenges: ${response.statusText}`);
       }
-    },
-    onError: (error: Error) => {
+      
+      const data = await response.json();
+      setChallenges(data.challenges || []);
+    } catch (error: any) {
       toast({
-        title: 'Failed to generate challenges',
-        description: error.message,
-        variant: 'destructive'
+        title: "Failed to generate challenges",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-  });
-
-  const handleGenerateClick = () => {
-    if (!promptInput.trim()) {
-      toast({
-        title: 'Empty prompt',
-        description: 'Please describe the kind of challenge you want to create',
-        variant: 'destructive'
-      });
-      return;
-    }
-    generateMutation.mutate(promptInput);
   };
 
-  const handleChallengeSelect = (challenge: any) => {
-    onChallengeSelected(challenge);
-    setOpen(false);
-    setPromptInput('');
-    setGeneratedChallenges([]);
+  const handleSelectChallenge = (index: number) => {
+    setSelectedIndex(index);
+  };
+
+  const handleConfirmSelection = () => {
+    if (selectedIndex !== null && challenges[selectedIndex]) {
+      onChallengeSelected(challenges[selectedIndex]);
+      setIsOpen(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="default" className="gap-2">
-          <Sparkles className="h-4 w-4" />
-          AI Challenge Generator
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>AI-Powered Challenge Generator</DialogTitle>
-          <DialogDescription>
-            Describe the challenge you want to create, and our AI will generate suggestions based on your description.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Button 
+        onClick={() => setIsOpen(true)} 
+        variant="outline"
+        className="mb-4 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 hover:bg-primary/10"
+      >
+        <Sparkles className="h-4 w-4 mr-2 text-primary" />
+        Generate Challenge with AI
+      </Button>
 
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="challenge-prompt">Your Challenge Description</Label>
-            <Textarea
-              id="challenge-prompt"
-              placeholder="E.g., Create a challenge to help us both stay sober for 30 days, or a daily meditation challenge for anxiety management"
-              className="min-h-[100px]"
-              value={promptInput}
-              onChange={(e) => setPromptInput(e.target.value)}
-            />
-          </div>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>AI Challenge Generator</DialogTitle>
+            <DialogDescription>
+              Use AI to generate personalized challenge ideas based on your match connection.
+            </DialogDescription>
+          </DialogHeader>
 
-          <Button 
-            onClick={handleGenerateClick} 
-            disabled={generateMutation.isPending || !promptInput.trim()}
-            className="w-full"
-          >
-            {generateMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Challenge Ideas
-              </>
-            )}
-          </Button>
-
-          {generatedChallenges.length > 0 && (
-            <div className="grid gap-4 mt-4">
-              <h3 className="text-lg font-semibold">Choose a Challenge:</h3>
-              <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2">
-                {generatedChallenges.map((challenge, index) => (
-                  <Card key={index} className="cursor-pointer hover:bg-accent/50 transition-colors">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">{challenge.title}</CardTitle>
-                      <CardDescription className="text-xs">
-                        {challenge.challengeType === 'days_sober' 
-                          ? 'Sobriety Challenge' 
-                          : challenge.challengeType === 'check_in_streak'
-                            ? 'Check-in Streak Challenge'
-                            : 'Standard Challenge'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <p className="text-sm">{challenge.description}</p>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => handleChallengeSelect(challenge)}
-                      >
-                        Select This Challenge
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
+          <div className="py-4">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="text-sm text-center text-neutral-600">
+                  Generating personalized challenges...
+                </p>
               </div>
-            </div>
-          )}
-        </div>
+            ) : challenges.length > 0 ? (
+              <div className="space-y-4">
+                <div className="grid gap-4">
+                  {challenges.map((challenge, index) => (
+                    <div 
+                      key={index}
+                      className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                        selectedIndex === index 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-neutral-200 hover:border-primary/50'
+                      }`}
+                      onClick={() => handleSelectChallenge(index)}
+                    >
+                      <h3 className="font-medium mb-1">{challenge.title}</h3>
+                      <p className="text-sm text-neutral-600">{challenge.description}</p>
+                      <div className="mt-2 flex items-center text-xs text-neutral-500">
+                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full mr-2">
+                          {challenge.challengeType === 'days_sober' 
+                            ? 'Sobriety Tracking' 
+                            : challenge.challengeType === 'check_in_streak'
+                            ? 'Daily Check-in'
+                            : 'Standard Challenge'
+                          }
+                        </span>
+                        <span>
+                          {challenge.totalSteps} {challenge.totalSteps === 1 ? 'step' : 'steps'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button 
+                    variant="outline"
+                    onClick={generateChallenges}
+                  >
+                    Regenerate
+                  </Button>
+                  <Button
+                    onClick={handleConfirmSelection}
+                    disabled={selectedIndex === null}
+                  >
+                    Select Challenge
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6 text-center p-4">
+                <p>Click the button below to generate AI-powered challenge ideas for you and your partner.</p>
+                <Button onClick={generateChallenges}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Challenge Ideas
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

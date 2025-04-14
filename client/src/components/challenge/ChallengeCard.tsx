@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ProgressRing from "@/components/shared/ProgressRing";
-import { format, isFuture, formatDistanceToNow } from "date-fns";
+import { format, isFuture, formatDistanceToNow, formatDistance } from "date-fns";
 import { 
   Brain, 
   MessageSquare, 
@@ -10,7 +10,13 @@ import {
   Plus, 
   Check, 
   Clock, 
-  BrainCircuit 
+  BrainCircuit,
+  Calendar as CalendarIcon,
+  Droplets,
+  Waves,
+  RefreshCw,
+  Trophy,
+  Timer
 } from "lucide-react";
 
 interface ChallengeCardProps {
@@ -19,6 +25,7 @@ interface ChallengeCardProps {
     title: string;
     description?: string;
     type: string;
+    challengeType: 'generic' | 'days_sober' | 'check_in_streak';
     startDate: string;
     endDate: string;
     totalSteps: number;
@@ -33,15 +40,37 @@ interface ChallengeCardProps {
       profilePic?: string;
     };
     progress: {
-      user: { stepsCompleted: number };
-      partner: { stepsCompleted: number };
+      user: { 
+        stepsCompleted: number; 
+        daysSober?: number;
+        currentStreak?: number;
+        longestStreak?: number;
+        lastCheckIn?: string;
+      };
+      partner: { 
+        stepsCompleted: number;
+        daysSober?: number;
+        currentStreak?: number;
+        longestStreak?: number;
+        lastCheckIn?: string;
+      };
     };
   };
   completed?: boolean;
   onUpdateProgress?: (challengeId: number, stepsCompleted: number) => void;
+  onSobrietyUpdate?: (challengeId: number, daysSober: number) => void;
+  onCheckIn?: (challengeId: number) => void;
+  onSobrietyReset?: (challengeId: number) => void;
 }
 
-export default function ChallengeCard({ challenge, completed = false, onUpdateProgress }: ChallengeCardProps) {
+export default function ChallengeCard({ 
+  challenge, 
+  completed = false, 
+  onUpdateProgress,
+  onSobrietyUpdate,
+  onCheckIn,
+  onSobrietyReset
+}: ChallengeCardProps) {
   const [isLoggingProgress, setIsLoggingProgress] = useState(false);
   
   // Extract challenge data
@@ -68,6 +97,14 @@ export default function ChallengeCard({ challenge, completed = false, onUpdatePr
   
   // Get icon based on challenge type
   const getIcon = () => {
+    // First check specialized challenge type
+    if (challenge.challengeType === 'days_sober') {
+      return <Droplets className="text-lg text-blue-500" />;
+    } else if (challenge.challengeType === 'check_in_streak') {
+      return <CalendarIcon className="text-lg text-green-500" />;
+    }
+    
+    // Then fall back to regular type
     switch (challenge.type) {
       case 'daily':
         return <Brain className="text-lg" />;
@@ -75,6 +112,30 @@ export default function ChallengeCard({ challenge, completed = false, onUpdatePr
         return <BrainCircuit className="text-lg" />;
       default:
         return <MessageSquare className="text-lg" />;
+    }
+  };
+  
+  // Handle specialized challenge types
+  const handleCheckIn = () => {
+    if (!onCheckIn) return;
+    setIsLoggingProgress(true);
+    onCheckIn(id);
+    setTimeout(() => setIsLoggingProgress(false), 500);
+  };
+  
+  const handleSobrietyUpdate = () => {
+    if (!onSobrietyUpdate || !progress.user.daysSober) return;
+    setIsLoggingProgress(true);
+    onSobrietyUpdate(id, progress.user.daysSober + 1);
+    setTimeout(() => setIsLoggingProgress(false), 500);
+  };
+  
+  const handleSobrietyReset = () => {
+    if (!onSobrietyReset) return;
+    if (confirm("Are you sure you want to reset your sobriety counter? This can't be undone.")) {
+      setIsLoggingProgress(true);
+      onSobrietyReset(id);
+      setTimeout(() => setIsLoggingProgress(false), 500);
     }
   };
   
@@ -188,26 +249,96 @@ export default function ChallengeCard({ challenge, completed = false, onUpdatePr
           </div>
         </div>
         
-        <div className="md:w-1/6 flex justify-end">
-          <Button
-            onClick={handleLogProgress}
-            disabled={buttonDisabled}
-            variant={getButtonVariant() as any}
-            className="flex items-center gap-1"
-          >
-            {isLoggingProgress ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-1" />
-            ) : completed || status === 'completed' ? (
-              <Check className="h-4 w-4 mr-1" />
-            ) : progress.user.stepsCompleted >= totalSteps ? (
-              <Check className="h-4 w-4 mr-1" />
-            ) : daysLeft === 0 ? (
-              <Clock className="h-4 w-4 mr-1" />
-            ) : (
-              <Plus className="h-4 w-4 mr-1" />
-            )}
-            {getButtonText()}
-          </Button>
+        <div className="md:w-1/6 flex flex-col gap-2">
+          {challenge.challengeType === 'days_sober' ? (
+            <>
+              {/* Sobriety challenge specific UI */}
+              <div className="text-center mb-1">
+                <div className="text-sm font-semibold">Days Sober</div>
+                <div className="text-2xl font-bold text-blue-500">
+                  {progress.user.daysSober || 0}
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSobrietyUpdate}
+                  disabled={isLoggingProgress || completed || status === 'completed'}
+                  variant="default"
+                  size="sm"
+                  className="flex items-center gap-1 flex-1"
+                >
+                  {isLoggingProgress ? (
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <Plus className="h-3 w-3" />
+                  )}
+                  Update
+                </Button>
+                
+                <Button
+                  onClick={handleSobrietyReset}
+                  disabled={isLoggingProgress || completed || status === 'completed' || !progress.user.daysSober}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
+              </div>
+            </>
+          ) : challenge.challengeType === 'check_in_streak' ? (
+            <>
+              {/* Check-in streak specific UI */}
+              <div className="text-center mb-1">
+                <div className="text-sm font-semibold">Current Streak</div>
+                <div className="text-2xl font-bold text-green-500">
+                  {progress.user.currentStreak || 0}
+                </div>
+                {progress.user.longestStreak && progress.user.longestStreak > 0 && (
+                  <div className="text-xs text-neutral-500">
+                    Best: {progress.user.longestStreak} days
+                  </div>
+                )}
+              </div>
+              
+              <Button
+                onClick={handleCheckIn}
+                disabled={isLoggingProgress || completed || status === 'completed'}
+                variant="default"
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                {isLoggingProgress ? (
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <Trophy className="h-3 w-3" />
+                )}
+                Check In
+              </Button>
+            </>
+          ) : (
+            // Default challenge UI
+            <Button
+              onClick={handleLogProgress}
+              disabled={buttonDisabled}
+              variant={getButtonVariant() as any}
+              className="flex items-center gap-1"
+            >
+              {isLoggingProgress ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-1" />
+              ) : completed || status === 'completed' ? (
+                <Check className="h-4 w-4 mr-1" />
+              ) : progress.user.stepsCompleted >= totalSteps ? (
+                <Check className="h-4 w-4 mr-1" />
+              ) : daysLeft === 0 ? (
+                <Clock className="h-4 w-4 mr-1" />
+              ) : (
+                <Plus className="h-4 w-4 mr-1" />
+              )}
+              {getButtonText()}
+            </Button>
+          )}
         </div>
       </div>
     </div>
