@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { format } from "date-fns";
+import { format } from 'date-fns';
 
 interface MessageBubbleProps {
   message: {
@@ -10,43 +10,45 @@ interface MessageBubbleProps {
     isRead: boolean;
   };
   isOwnMessage: boolean;
+  senderName?: string;
   senderAvatar?: string;
-  senderName: string;
 }
 
 export default function MessageBubble({ 
   message, 
   isOwnMessage, 
-  senderAvatar, 
-  senderName 
+  senderName = "User",
+  senderAvatar,
 }: MessageBubbleProps) {
-  const sentTime = new Date(message.sentAt);
+  const formattedTime = format(new Date(message.sentAt), 'h:mm a');
   
-  // Format time
-  const formattedTime = format(sentTime, "h:mm a");
-  
-  // Style for different bubble types
-  const bubbleClass = isOwnMessage 
-    ? "bg-primary text-white chat-bubble-right ml-12" 
-    : "bg-white chat-bubble-left mr-12";
-
   return (
-    <div className={`flex items-start ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-      <Avatar className="h-8 w-8 flex-shrink-0">
+    <div className={`flex items-start gap-2 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
+      <Avatar className="w-8 h-8 flex-shrink-0">
         {senderAvatar ? (
           <AvatarImage src={senderAvatar} alt={senderName} />
         ) : (
-          <AvatarFallback className={isOwnMessage ? "bg-primary/80 text-white" : "bg-neutral-300"}>
-            {senderName.charAt(0)}
+          <AvatarFallback className={`${isOwnMessage ? 'bg-primary' : 'bg-neutral-500'} text-white text-xs`}>
+            {senderName?.charAt(0).toUpperCase() || "U"}
           </AvatarFallback>
         )}
       </Avatar>
-      <div className={`${isOwnMessage ? 'mr-2' : 'ml-2'} p-3 rounded-[1.25rem] ${bubbleClass}`}>
-        <p className="text-sm break-words">{message.content}</p>
-        <div className={`text-[10px] mt-1 text-right ${isOwnMessage ? 'text-primary-foreground/70' : 'text-neutral-500'}`}>
-          {formattedTime}
-          {isOwnMessage && (
-            <span className="ml-1">{message.isRead ? "✓✓" : "✓"}</span>
+      
+      <div className={`max-w-[75%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+        <div 
+          className={`rounded-xl py-2 px-3 ${
+            isOwnMessage 
+              ? 'bg-primary text-white rounded-tr-none'
+              : 'bg-neutral-200 text-neutral-900 rounded-tl-none'
+          }`}
+        >
+          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+        </div>
+        
+        <div className={`flex items-center mt-1 text-xs text-neutral-500 ${isOwnMessage ? 'justify-end' : ''}`}>
+          <span className="mr-1">{formattedTime}</span>
+          {isOwnMessage && message.isRead && (
+            <span className="text-primary text-xs">✓</span>
           )}
         </div>
       </div>

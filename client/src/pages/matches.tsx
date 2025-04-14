@@ -23,8 +23,15 @@ export default function Matches() {
   
   // Get selected match details if any
   const { data: matchDetailData, isLoading: matchDetailLoading } = useQuery({
-    queryKey: ['/api/matches', selectedMatchId],
+    queryKey: [`/api/matches/${selectedMatchId}`],
     enabled: !!selectedMatchId,
+    queryFn: async () => {
+      const response = await fetch(`/api/matches/${selectedMatchId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch match details");
+      }
+      return response.json();
+    },
   });
   
   // Active matches only
@@ -123,11 +130,31 @@ export default function Matches() {
       </section>
       
       {/* Match Detail View */}
-      {selectedMatchId && matchDetailData && (
-        <MatchDetail 
-          match={matchDetailData.match} 
-          onClose={handleClose} 
-        />
+      {selectedMatchId && (
+        matchDetailLoading ? (
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <h3 className="font-semibold mb-2">Loading match details...</h3>
+            <p className="text-neutral-500 text-sm">
+              Please wait while we retrieve the match information.
+            </p>
+          </div>
+        ) : matchDetailData ? (
+          <MatchDetail 
+            match={matchDetailData.match} 
+            onClose={handleClose} 
+          />
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+            <h3 className="font-semibold mb-2">Error loading match</h3>
+            <p className="text-neutral-500 text-sm mb-4">
+              There was a problem retrieving match details.
+            </p>
+            <Button onClick={handleClose} variant="outline">
+              Close
+            </Button>
+          </div>
+        )
       )}
       
       {/* Match Finder View */}
