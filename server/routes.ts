@@ -759,12 +759,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Send notification to a specific user
   function sendNotification(userId: number, notification: any) {
+    console.log(`Attempting to send notification to user ${userId}:`, notification);
+    
     const client = connectedClients.get(userId);
-    if (client && client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(notification));
-      return true;
+    if (!client) {
+      console.log(`No WebSocket connection found for user ${userId}`);
+      return false;
     }
-    return false;
+    
+    if (client.readyState !== WebSocket.OPEN) {
+      console.log(`WebSocket for user ${userId} is not in OPEN state (state: ${client.readyState})`);
+      return false;
+    }
+    
+    try {
+      const message = JSON.stringify(notification);
+      client.send(message);
+      console.log(`Successfully sent notification to user ${userId}`);
+      return true;
+    } catch (error) {
+      console.error(`Error sending notification to user ${userId}:`, error);
+      return false;
+    }
   }
   
   // Send pending matches update to a user
