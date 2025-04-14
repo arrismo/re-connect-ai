@@ -18,7 +18,10 @@ export default function AuthPage() {
   // If path is exactly /auth, redirect to the login page
   useEffect(() => {
     if (location === "/auth") {
-      setLocation("/auth/login");
+      // Adding a small delay to ensure proper component mounting
+      setTimeout(() => {
+        setLocation("/auth/login");
+      }, 10);
     }
   }, [location, setLocation]);
 

@@ -19,9 +19,9 @@ import { ProtectedRoute, PublicOnlyRoute } from "@/lib/protected-route";
 function Router() {
   return (
     <Switch>
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/auth/login" component={AuthPage} />
-      <Route path="/auth/register" component={AuthPage} />
+      <PublicOnlyRoute path="/auth" component={AuthPage} />
+      <PublicOnlyRoute path="/auth/login" component={AuthPage} />
+      <PublicOnlyRoute path="/auth/register" component={AuthPage} />
       
       <Route path="/" component={() => {
         const [, setLocation] = useLocation();
