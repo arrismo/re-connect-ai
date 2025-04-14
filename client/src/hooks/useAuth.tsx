@@ -78,16 +78,29 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     mutationFn: async (credentials: LoginCredentials) => {
       // Validate credentials
       loginSchema.parse(credentials);
-      
-      const res = await apiRequest("POST", "/api/login", credentials);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Login failed");
+
+      try {
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(credentials),
+          credentials: "include"
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: "Login failed" }));
+          throw new Error(errorData.message || "Login failed");
+        }
+        
+        // Return the user data
+        const userData = await res.json();
+        return userData;
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("Login failed: Network error");
       }
-      
-      // Return the user data
-      const userData = await res.json();
-      return userData;
     },
     onSuccess: (data: SelectUser) => {
       queryClient.setQueryData(["/api/user"], data);
@@ -111,15 +124,28 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
       // Validate registration data
       registerSchema.parse(data);
       
-      const res = await apiRequest("POST", "/api/register", data);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Registration failed");
+      try {
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          credentials: "include"
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: "Registration failed" }));
+          throw new Error(errorData.message || "Registration failed");
+        }
+        
+        // Return the user data
+        const userData = await res.json();
+        return userData;
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error("Registration failed: Network error");
       }
-      
-      // Return the user data
-      const userData = await res.json();
-      return userData;
     },
     onSuccess: (data: SelectUser) => {
       queryClient.setQueryData(["/api/user"], data);
@@ -140,14 +166,25 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   // Logout function
   const logout = async () => {
     try {
-      await apiRequest("POST", "/api/logout");
+      const res = await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+      
+      if (!res.ok) {
+        throw new Error("Logout failed");
+      }
+      
+      // Clear user data from cache
       queryClient.setQueryData(["/api/user"], null);
       queryClient.invalidateQueries();
+      
       toast({
         title: "Logout successful",
         description: "You have been logged out",
       });
     } catch (error) {
+      console.error("Logout error:", error);
       toast({
         title: "Logout failed",
         description: "An error occurred during logout",

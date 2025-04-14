@@ -37,9 +37,18 @@ export default function Login() {
     // Submit login
     try {
       // Use the auth context login method
-      auth.loginMutation.mutate({ username, password });
+      auth.loginMutation.mutate(
+        { username, password },
+        {
+          onError: (error) => {
+            console.error("Login error:", error);
+            setErrors({ form: error.message || "Login failed. Please check your username and password." });
+          }
+        }
+      );
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Unexpected login error:", error);
+      setErrors({ form: "An unexpected error occurred. Please try again." });
     }
   };
 
@@ -100,7 +109,12 @@ export default function Login() {
                     "Sign In"
                   )}
                 </Button>
-                {auth.loginMutation.isError && (
+                {errors.form && (
+                  <p className="text-sm text-destructive text-center">
+                    {errors.form}
+                  </p>
+                )}
+                {auth.loginMutation.isError && !errors.form && (
                   <p className="text-sm text-destructive text-center">
                     {auth.loginMutation.error.message}
                   </p>

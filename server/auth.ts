@@ -52,14 +52,22 @@ export function setupAuth(app: Express) {
     });
   }
 
+  // Generate a session secret if one is not provided
+  if (!process.env.SESSION_SECRET) {
+    process.env.SESSION_SECRET = randomBytes(32).toString('hex');
+    console.log("Generated a new SESSION_SECRET");
+  }
+
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'CHANGE_ME_IN_PRODUCTION',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
     cookie: {
       secure: isProduction,
-      maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      sameSite: 'lax',
+      httpOnly: true
     }
   };
 
@@ -165,19 +173,30 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    console.log("Login attempt:", req.body.username);
+    
     passport.authenticate("local", (err: any, user: Express.User | false, info: { message: string } | undefined) => {
       if (err) {
+        console.error("Login error:", err);
         return next(err);
       }
+      
       if (!user) {
+        console.log("Authentication failed:", info?.message);
         return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
+      
+      console.log("User authenticated, establishing session for:", user.username);
+      
       req.login(user, (err) => {
         if (err) {
+          console.error("Session creation error:", err);
           return next(err);
         }
+        
         // Don't send password in response
         const { password, ...userWithoutPassword } = user;
+        console.log("Login successful for:", user.username);
         return res.json(userWithoutPassword);
       });
     })(req, res, next);
