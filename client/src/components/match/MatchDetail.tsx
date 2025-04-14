@@ -55,8 +55,24 @@ interface MatchDetailProps {
 }
 
 export default function MatchDetail({ match, onClose }: MatchDetailProps) {
-  const { otherUser, matchScore, matchDetails, challenges, messages } = match;
   const { toast } = useToast();
+  
+  // Check if match is undefined or null
+  if (!match) {
+    return (
+      <div className="p-6 rounded-lg bg-neutral-50 text-center">
+        <div className="animate-pulse text-neutral-500 mb-4">
+          <Loader2 className="h-8 w-8 mx-auto" />
+        </div>
+        <h3 className="font-semibold mb-2">Loading match details...</h3>
+        <p className="text-neutral-500 text-sm">
+          Please wait while we retrieve the match information.
+        </p>
+      </div>
+    );
+  }
+  
+  const { otherUser, matchScore, matchDetails, challenges, messages } = match;
   
   // Default values if match details aren't provided
   const goalAlignment = matchDetails?.goalAlignment || 95;
@@ -64,8 +80,8 @@ export default function MatchDetail({ match, onClose }: MatchDetailProps) {
   const scheduleCompatibility = matchDetails?.scheduleCompatibility || 86;
   
   // Filter goals and experiences
-  const userGoals = otherUser.goals || [];
-  const userExperiences = otherUser.experiences || [];
+  const userGoals = otherUser?.goals || [];
+  const userExperiences = otherUser?.experiences || [];
   
   // Get completed challenges
   const completedChallenges = challenges?.filter(c => c.status === 'completed') || [];
