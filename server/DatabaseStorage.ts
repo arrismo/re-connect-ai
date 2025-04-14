@@ -172,15 +172,14 @@ export class DatabaseStorage implements IStorage {
     
     if (validMatchIds.length === 0) return [];
     
-    // Use a safe parameterized query with SQL template literals
-    const safeList = validMatchIds.join(',');
-    console.log(`Getting challenges for match IDs: ${safeList}`);
+    console.log(`Getting challenges for match IDs: ${validMatchIds.join(', ')}`);
     
     try {
+      // Use inArray for safe parameterized IN query
       return db
         .select()
         .from(challenges)
-        .where(sql`${challenges.matchId} IN (${safeList})`);
+        .where(inArray(challenges.matchId, validMatchIds));
     } catch (error) {
       console.error(`Error in getUserChallenges: ${error}`);
       return [];

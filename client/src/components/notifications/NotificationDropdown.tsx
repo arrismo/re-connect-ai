@@ -111,16 +111,17 @@ export default function NotificationDropdown() {
             {formatTimeAgo(notification.timestamp)}
           </p>
           
-          <Link href={`/messages?matchId=${notification.matchId}`}>
-            <Button 
+          <Button 
               size="sm" 
               variant="default"
               className="h-8 text-xs w-full mt-2"
-              onClick={() => handleViewMessage(notification.matchId)}
+              onClick={() => {
+                handleViewMessage(notification.matchId);
+                window.location.href = `/messages?matchId=${notification.matchId}`;
+              }}
             >
               View Message
             </Button>
-          </Link>
         </>
       );
     }
