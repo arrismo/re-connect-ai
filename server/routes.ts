@@ -276,6 +276,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Helper function to check if a user has an active match
+  async function hasActiveMatch(userId: number): Promise<{ hasMatch: boolean, match?: Match }> {
+    try {
+      // Get all matches for the user
+      const userMatches = await storage.getUserMatches(userId);
+      
+      // Find any active match
+      const activeMatch = userMatches.find(match => match.status === "active");
+      
+      return {
+        hasMatch: !!activeMatch,
+        match: activeMatch
+      };
+    } catch (error) {
+      console.error(`Error checking active matches for user ${userId}:`, error);
+      return { hasMatch: false };
+    }
+  }
+  
   // Request a match with another user
   app.post("/api/matches", ensureAuthenticated, async (req: any, res) => {
     try {
@@ -286,6 +305,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).parse(req.body);
       
       const userId = req.user.id;
+      
+      // Check if requesting user already has an active match
+      const requesterActiveMatch = await hasActiveMatch(userId);
+      if (requesterActiveMatch.hasMatch) {
+        return res.status(400).json({ 
+          message: "You already have an active match. Please unmatch first to request a new match.",
+          activeMatch: requesterActiveMatch.match
+        });
+      }
+      
+      // Check if target user already has an active match
+      const targetActiveMatch = await hasActiveMatch(otherUserId);
+      if (targetActiveMatch.hasMatch) {
+        return res.status(400).json({ 
+          message: "This user already has an active match and is unavailable."
+        });
+      }
       
       // Check if users already have a match
       const existingMatch = await storage.findExistingMatch(userId, otherUserId);

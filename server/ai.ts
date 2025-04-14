@@ -4,7 +4,7 @@ import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 export interface MatchRecommendation {
   userId: number;
   displayName: string;
-  profilePic?: string;
+  profilePic: string;
   matchScore: number;
   sharedInterests: string[];
   memberSince: string; // ISO date string
@@ -269,23 +269,25 @@ class AIService {
       }
 
       // Format and return results
-      return aiRecommendations
-        .map((rec: any) => {
-          const match = filteredMatches.find((m) => m.id === rec.userId);
-          if (!match) return null;
-
-          return {
-            userId: match.id,
-            displayName: match.displayName || "User",
-            profilePic: match.profilePic || "",
-            matchScore: rec.matchScore,
-            sharedInterests: rec.sharedInterests || [],
-            memberSince: match.createdAt
-              ? match.createdAt.toISOString().split("T")[0]
-              : "recent",
-          };
-        })
-        .filter((item): item is MatchRecommendation => item !== null);
+      const validRecommendations: MatchRecommendation[] = [];
+      
+      for (const rec of aiRecommendations) {
+        const match = filteredMatches.find((m) => m.id === rec.userId);
+        if (!match) continue;
+        
+        validRecommendations.push({
+          userId: match.id,
+          displayName: match.displayName || "User",
+          profilePic: match.profilePic || "",
+          matchScore: rec.matchScore,
+          sharedInterests: rec.sharedInterests || [],
+          memberSince: match.createdAt
+            ? match.createdAt.toISOString().split("T")[0]
+            : "recent",
+        });
+      }
+      
+      return validRecommendations;
     } catch (error) {
       console.error("AI matching error:", error);
       return this.fallbackMatchAlgorithm(
