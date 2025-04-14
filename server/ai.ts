@@ -180,8 +180,8 @@ class AIService {
 
           return {
             userId: match.id,
-            displayName: match.displayName,
-            profilePic: match.profilePic,
+            displayName: match.displayName || "User",
+            profilePic: match.profilePic || "",
             matchScore: rec.matchScore,
             sharedInterests: rec.sharedInterests || [],
             memberSince: match.createdAt
@@ -189,7 +189,7 @@ class AIService {
               : "recent",
           };
         })
-        .filter(Boolean);
+        .filter((item): item is MatchRecommendation => item !== null);
     } catch (error) {
       console.error("AI matching error:", error);
       return this.fallbackMatchAlgorithm(
