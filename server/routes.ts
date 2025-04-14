@@ -182,22 +182,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingMatches = await storage.getUserMatches(userId);
       console.log(`[${userId}] Existing matches fetched (${existingMatches.length}).`);
       
-      // Make sure we're working with valid numbers for all IDs
-      const existingMatchUserIds = existingMatches.flatMap(match => {
-        // Ensure both IDs are valid numbers
-        const userId1 = typeof match.userId1 === 'number' ? match.userId1 : parseInt(match.userId1 as any);
-        const userId2 = typeof match.userId2 === 'number' ? match.userId2 : parseInt(match.userId2 as any);
-        
-        // Only return valid IDs (not NaN)
-        return [
-          !isNaN(userId1) ? userId1 : null,
-          !isNaN(userId2) ? userId2 : null
-        ].filter(id => id !== null && id !== userId);
+      // Create a Set to store unique matched user IDs (avoids duplicate checks)
+      const existingMatchUserIds = new Set<number>();
+      
+      // Safely process each match to extract other user's ID
+      existingMatches.forEach(match => {
+        try {
+          if (match.userId1 === userId && typeof match.userId2 === 'number') {
+            existingMatchUserIds.add(match.userId2);
+          } else if (match.userId2 === userId && typeof match.userId1 === 'number') {
+            existingMatchUserIds.add(match.userId1);
+          }
+        } catch (error) {
+          console.error("Error processing match:", match, error);
+        }
       });
       
-      const potentialMatches = allUsers.filter(u => 
-        u.id !== userId && !existingMatchUserIds.includes(u.id)
-      );
+      console.log(`[${userId}] Filtered ${existingMatchUserIds.size} existing match user IDs`);
+      
+      const potentialMatches = allUsers.filter(u => {
+        // Ensure we only consider users with valid IDs
+        if (typeof u.id !== 'number' || isNaN(u.id)) {
+          return false;
+        }
+        // Don't match with yourself and don't match with users you're already matched with
+        return u.id !== userId && !existingMatchUserIds.has(u.id);
+      });
       
       if (potentialMatches.length === 0) {
         return res.status(200).json({ recommendations: [] });

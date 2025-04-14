@@ -69,6 +69,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserMatches(userId: number): Promise<Match[]> {
+    // Make sure userId is a valid number
+    if (typeof userId !== 'number' || isNaN(userId)) {
+      console.error(`getUserMatches called with invalid userId: ${userId}`);
+      return [];
+    }
+    
+    // Use integer casting to ensure we're using the correct type
     return db
       .select()
       .from(matches)
@@ -81,6 +88,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async findExistingMatch(userId1: number, userId2: number): Promise<Match | undefined> {
+    // Make sure userIds are valid numbers
+    if (typeof userId1 !== 'number' || isNaN(userId1) || 
+        typeof userId2 !== 'number' || isNaN(userId2)) {
+      console.error(`findExistingMatch called with invalid userIds: ${userId1}, ${userId2}`);
+      return undefined;
+    }
+    
     const [match] = await db
       .select()
       .from(matches)
