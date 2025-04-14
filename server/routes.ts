@@ -181,9 +181,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[${userId}] Getting existing matches...`);
       const existingMatches = await storage.getUserMatches(userId);
       console.log(`[${userId}] Existing matches fetched (${existingMatches.length}).`);
-      const existingMatchUserIds = existingMatches.flatMap(match => 
-        [match.userId1, match.userId2]
-      ).filter(id => id !== userId);
+      
+      // Make sure we're working with valid numbers for all IDs
+      const existingMatchUserIds = existingMatches.flatMap(match => {
+        // Ensure both IDs are valid numbers
+        const userId1 = typeof match.userId1 === 'number' ? match.userId1 : parseInt(match.userId1 as any);
+        const userId2 = typeof match.userId2 === 'number' ? match.userId2 : parseInt(match.userId2 as any);
+        
+        // Only return valid IDs (not NaN)
+        return [
+          !isNaN(userId1) ? userId1 : null,
+          !isNaN(userId2) ? userId2 : null
+        ].filter(id => id !== null && id !== userId);
+      });
       
       const potentialMatches = allUsers.filter(u => 
         u.id !== userId && !existingMatchUserIds.includes(u.id)

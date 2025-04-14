@@ -107,19 +107,39 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
     
     console.log("Finding matches with interests:", selectedInterests);
     try {
-      const result = await refetch();
-      console.log("Match finding result:", result);
+      // Create a new fetch request manually instead of using refetch
+      // This gives us more control over error handling
+      const params = new URLSearchParams();
+      if (selectedInterests.length > 0) {
+        params.set('interests', selectedInterests.join(','));
+      }
+
+      const response = await fetch(`/api/matches/find?${params.toString()}`);
       
-      if (result.error) {
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Failed to find matches" }));
         toast({
           title: "Error Finding Matches",
-          description: result.error.message || "An error occurred while finding matches",
+          description: errorData.message || "An error occurred while finding matches",
           variant: "destructive",
         });
-      } else if (!result.data || !result.data.recommendations || result.data.recommendations.length === 0) {
+        return;
+      }
+      
+      const data = await response.json();
+      // Update the query cache with the new data
+      queryClient.setQueryData(['/api/matches/find', selectedInterests], data);
+      
+      if (!data.recommendations || data.recommendations.length === 0) {
         toast({
           title: "No Matches Found",
           description: "No matching users were found with the selected interests. Try selecting different interests or check back later.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Matches Found",
+          description: `Found ${data.recommendations.length} potential matches based on your interests.`,
           variant: "default",
         });
       }
