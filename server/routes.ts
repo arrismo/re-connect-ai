@@ -647,6 +647,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create message
       const newMessage = await storage.createMessage(messageData);
       
+      // Send real-time notification to the recipient
+      try {
+        // Determine the recipient's user ID
+        const recipientId = match.userId1 === req.user.id ? match.userId2 : match.userId1;
+        
+        // Get sender info
+        const sender = await storage.getUser(req.user.id);
+        
+        // Send notification via WebSocket
+        sendNotification(recipientId, {
+          type: 'new_message',
+          matchId: match.id,
+          message: {
+            id: newMessage.id,
+            senderId: newMessage.senderId,
+            content: newMessage.content,
+            sentAt: newMessage.sentAt ? newMessage.sentAt.toISOString() : new Date().toISOString(),
+            isRead: newMessage.isRead
+          },
+          sender: {
+            id: sender?.id,
+            displayName: sender?.displayName || 'User',
+            profilePic: sender?.profilePic
+          }
+        });
+        
+        console.log(`Sent message notification to user ${recipientId}`);
+      } catch (notificationError) {
+        // Just log the error, don't fail the request
+        console.error('Failed to send message notification:', notificationError);
+      }
+      
       res.status(201).json({ message: newMessage });
     } catch (error: any) {
       res.status(400).json({ message: error.message });

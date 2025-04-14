@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect, createContext, useContext } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 type NotificationType = "new_match_request" | "pending_matches" | "match_accepted" | "new_message";
 
@@ -23,7 +24,24 @@ export interface PendingMatchesNotification {
   }[];
 }
 
-type NotificationMessage = MatchNotification | PendingMatchesNotification;
+export interface MessageNotification {
+  type: "new_message";
+  matchId: number;
+  message: {
+    id: number;
+    senderId: number;
+    content: string;
+    sentAt: string;
+    isRead: boolean;
+  };
+  sender: {
+    id: number;
+    displayName: string;
+    profilePic?: string;
+  };
+}
+
+type NotificationMessage = MatchNotification | PendingMatchesNotification | MessageNotification;
 
 interface NotificationContextType {
   notifications: MatchNotification[];
@@ -67,6 +85,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       newSocket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data) as NotificationMessage;
+          console.log("WebSocket message received:", data);
           
           // Handle different notification types
           if (data.type === "new_match_request") {
@@ -101,6 +120,32 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 variant: "default",
               });
             }
+          }
+          else if (data.type === "new_message") {
+            // Handle new message notification
+            const messageData = data as MessageNotification;
+            
+            // Create a notification for the message
+            const messageNotification: MatchNotification = {
+              type: "new_message",
+              matchId: messageData.matchId,
+              userId: messageData.sender.id,
+              displayName: messageData.sender.displayName,
+              profilePic: messageData.sender.profilePic,
+              timestamp: messageData.message.sentAt
+            };
+            
+            setNotifications(prev => [...prev, messageNotification]);
+            
+            // Show toast for new message
+            toast({
+              title: "New Message",
+              description: `${messageData.sender.displayName}: ${messageData.message.content.substring(0, 30)}${messageData.message.content.length > 30 ? '...' : ''}`,
+              variant: "default",
+            });
+            
+            // Also invalidate the messages cache so the new message appears if the user is on the messages page
+            queryClient.invalidateQueries({ queryKey: [`/api/matches/${messageData.matchId}/messages`] });
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
