@@ -36,6 +36,20 @@ interface RecommendationsResponse {
   recommendations: MatchRecommendation[];
 }
 
+interface MatchesResponse {
+  matches: Array<{
+    id: number;
+    status: string;
+    userId1: number;
+    userId2: number;
+    otherUser: {
+      id: number;
+      displayName: string;
+      profilePic?: string;
+    };
+  }>;
+}
+
 export default function MatchFinder({ onClose }: MatchFinderProps) {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const { toast } = useToast();
@@ -46,12 +60,12 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
   });
   
   // Get existing matches to check if user already has an active match
-  const { data: matchesData, isLoading: matchesLoading } = useQuery({
+  const { data: matchesData } = useQuery<MatchesResponse>({
     queryKey: ['/api/matches'],
   });
   
   // Check if the user already has an active match
-  const hasActiveMatch = (matchesData?.matches || []).some((match: any) => match.status === 'active');
+  const hasActiveMatch = (matchesData?.matches || []).some((match) => match.status === 'active');
   
   // Find match recommendations
   const { data: recommendationsData, isLoading: recommendationsLoading, refetch } = useQuery<RecommendationsResponse>({
@@ -104,6 +118,16 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
   
   // Find matches
   const handleFindMatches = async () => {
+    // Double-check that user doesn't have an active match
+    if (hasActiveMatch) {
+      toast({
+        title: "Cannot Find Matches",
+        description: "You already have an active match. Please end your current match before finding new matches.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (selectedInterests.length === 0) {
       toast({
         title: "No Interests Selected",
@@ -163,6 +187,16 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
   
   // Request a match
   const handleRequestMatch = (userId: number, matchScore: number) => {
+    // Double-check that user doesn't have an active match 
+    if (hasActiveMatch) {
+      toast({
+        title: "Cannot Request Match",
+        description: "You already have an active match. Please end your current match before requesting a new one.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     requestMatchMutation.mutate({ otherUserId: userId, matchScore });
   };
   
@@ -189,113 +223,136 @@ export default function MatchFinder({ onClose }: MatchFinderProps) {
         </p>
       </div>
       
-      {/* Interest Selection */}
-      <Card className="mb-4">
-        <CardContent className="pt-6">
-          <h3 className="font-semibold mb-3">What are you looking for support with?</h3>
-          {interestsLoading ? (
-            <div className="flex justify-center py-6">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      {/* Active Match Warning */}
+      {hasActiveMatch && (
+        <Card className="mb-4 bg-amber-50 border-amber-200">
+          <CardContent className="pt-6">
+            <h3 className="font-semibold mb-3 text-amber-800">You Already Have an Active Match</h3>
+            <p className="text-amber-700 mb-4">
+              You can only have one active match at a time. To find a new match, you'll need to end your current match first.
+            </p>
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                className="border-amber-500 text-amber-700 hover:bg-amber-100"
+                onClick={onClose}
+              >
+                Return to Matches
+              </Button>
             </div>
-          ) : (
-            <>
-              {interests.length > 0 ? (
-                <>
-                  <p className="text-sm text-neutral-600 mb-3">
-                    Select the areas where you're looking for support. You can select multiple options.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
-                    {interests.map((interest: any) => (
-                      <div 
-                        key={interest.id} 
-                        className={`border rounded-lg p-3 flex items-center hover:border-primary cursor-pointer ${
-                          selectedInterests.includes(interest.name) 
-                            ? 'bg-primary/5 border-primary' 
-                            : 'border-neutral-300'
-                        }`}
-                        onClick={() => toggleInterest(interest.name)}
-                      >
-                        <Checkbox 
-                          id={`interest-${interest.id}`}
-                          checked={selectedInterests.includes(interest.name)}
-                          className="h-4 w-4 text-primary"
-                          onCheckedChange={() => toggleInterest(interest.name)}
-                        />
-                        <label 
-                          htmlFor={`interest-${interest.id}`} 
-                          className="ml-2 text-sm font-medium cursor-pointer w-full"
-                        >
-                          {interest.name}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                  {selectedInterests.length > 0 && (
-                    <div className="bg-accent/10 p-3 rounded-lg mb-4">
-                      <p className="text-sm font-medium">Selected interests: {selectedInterests.length}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {selectedInterests.map((interest, index) => (
-                          <span 
-                            key={index}
-                            className="bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full flex items-center"
-                          >
-                            {interest}
-                            <button 
-                              className="ml-1 text-primary hover:text-primary/80"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleInterest(interest);
-                              }}
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-neutral-600 mb-2">No interests found in the system.</p>
-                  <p className="text-sm text-neutral-500">Please try again later or contact support.</p>
-                </div>
-              )}
-              
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleFindMatches}
-                  disabled={recommendationsLoading}
-                >
-                  {recommendationsLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Finding Matches...
-                    </>
-                  ) : (
-                    <>
-                      Find Matches 
-                      <svg 
-                        className="ml-2 h-4 w-4" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth="2" 
-                          d="M14 5l7 7m0 0l-7 7m7-7H3"
-                        />
-                      </svg>
-                    </>
-                  )}
-                </Button>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Interest Selection */}
+      {!hasActiveMatch && (
+        <Card className="mb-4">
+          <CardContent className="pt-6">
+            <h3 className="font-semibold mb-3">What are you looking for support with?</h3>
+            {interestsLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <>
+                {interests.length > 0 ? (
+                  <>
+                    <p className="text-sm text-neutral-600 mb-3">
+                      Select the areas where you're looking for support. You can select multiple options.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
+                      {interests.map((interest: any) => (
+                        <div 
+                          key={interest.id} 
+                          className={`border rounded-lg p-3 flex items-center hover:border-primary cursor-pointer ${
+                            selectedInterests.includes(interest.name) 
+                              ? 'bg-primary/5 border-primary' 
+                              : 'border-neutral-300'
+                          }`}
+                          onClick={() => toggleInterest(interest.name)}
+                        >
+                          <Checkbox 
+                            id={`interest-${interest.id}`}
+                            checked={selectedInterests.includes(interest.name)}
+                            className="h-4 w-4 text-primary"
+                            onCheckedChange={() => toggleInterest(interest.name)}
+                          />
+                          <label 
+                            htmlFor={`interest-${interest.id}`} 
+                            className="ml-2 text-sm font-medium cursor-pointer w-full"
+                          >
+                            {interest.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    {selectedInterests.length > 0 && (
+                      <div className="bg-accent/10 p-3 rounded-lg mb-4">
+                        <p className="text-sm font-medium">Selected interests: {selectedInterests.length}</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedInterests.map((interest, index) => (
+                            <span 
+                              key={index}
+                              className="bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full flex items-center"
+                            >
+                              {interest}
+                              <button 
+                                className="ml-1 text-primary hover:text-primary/80"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleInterest(interest);
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-neutral-600 mb-2">No interests found in the system.</p>
+                    <p className="text-sm text-neutral-500">Please try again later or contact support.</p>
+                  </div>
+                )}
+                
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleFindMatches}
+                    disabled={recommendationsLoading}
+                  >
+                    {recommendationsLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Finding Matches...
+                      </>
+                    ) : (
+                      <>
+                        Find Matches 
+                        <svg 
+                          className="ml-2 h-4 w-4" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth="2" 
+                            d="M14 5l7 7m0 0l-7 7m7-7H3"
+                          />
+                        </svg>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
       
       {/* Match Results */}
       {recommendations.length > 0 && (
