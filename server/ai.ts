@@ -89,14 +89,23 @@ class AIService {
         
         Calculate a match score (0-100) for each potential match.
         
-        Return a JSON array with the following structure for each match:
-        [{
-          "userId": number,
-          "matchScore": number,
-          "sharedInterests": string[]
-        }]
+        IMPORTANT: You must ONLY return a valid JSON array without any explanation or commentary.
+        The response should be ONLY this JSON array and nothing else:
+        [
+          {
+            "userId": number,
+            "matchScore": number,
+            "sharedInterests": string[]
+          },
+          {
+            "userId": number,
+            "matchScore": number,
+            "sharedInterests": string[]
+          }
+        ]
         
         Sort by match score from highest to lowest, and return only matches with a score above 50.
+        DO NOT INCLUDE ANY TEXT BEFORE OR AFTER THE JSON ARRAY. The response should start with '[' and end with ']'.
       `;
 
       const result = await this.model.generateContent(prompt);
@@ -104,12 +113,64 @@ class AIService {
       const text = response.text();
 
       // Extract the JSON array from the response
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) {
-        throw new Error("Failed to parse AI response");
+      // The AI might include explanatory text, so we need to carefully extract just the JSON part
+      console.log("AI response:", text.substring(0, 100) + "..."); // Log the beginning of the response
+      
+      let aiRecommendations: any[] = [];
+      
+      // Try multiple JSON parsing strategies
+      // Strategy 1: Direct JSON parsing
+      try {
+        aiRecommendations = JSON.parse(text);
+        console.log("Successfully parsed direct JSON response");
+      } catch (error) {
+        console.log("Direct JSON parsing failed, trying alternative methods");
+        
+        // Strategy 2: Extract JSON array using regex
+        try {
+          const jsonMatch = text.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            aiRecommendations = JSON.parse(jsonMatch[0]);
+            console.log("Successfully parsed JSON using regex match");
+          } else {
+            console.log("Could not find JSON array pattern in response");
+            
+            // Strategy 3: Try to fix common JSON formatting issues
+            // Remove markdown code blocks
+            const cleanedText = text.replace(/```json|```/g, '').trim();
+            try {
+              aiRecommendations = JSON.parse(cleanedText);
+              console.log("Successfully parsed JSON after removing markdown");
+            } catch (cleanError) {
+              console.log("Clean JSON parsing failed");
+              
+              // Strategy 4: Last resort - try to extract just the array portion with more aggressive cleaning
+              try {
+                const bracketMatch = cleanedText.match(/\[[\s\S]*\]/);
+                if (bracketMatch) {
+                  // Further clean the content inside brackets
+                  const arrayText = bracketMatch[0]
+                    .replace(/(\r\n|\n|\r)/gm, "") // Remove newlines
+                    .replace(/\s+/g, ' ') // Normalize whitespace
+                    .trim();
+                  
+                  aiRecommendations = JSON.parse(arrayText);
+                  console.log("Successfully parsed JSON with aggressive cleaning");
+                } else {
+                  throw new Error("Could not extract JSON array");
+                }
+              } catch (finalError) {
+                console.error("All JSON parsing strategies failed");
+                // Fall back to fallback algorithm by throwing
+                throw new Error("Unable to parse AI response");
+              }
+            }
+          }
+        } catch (regexError) {
+          console.error("Regex JSON extraction failed");
+          throw new Error("Unable to extract valid JSON from AI response");
+        }
       }
-
-      const aiRecommendations = JSON.parse(jsonMatch[0]);
 
       // Format and return results
       return aiRecommendations
