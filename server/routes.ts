@@ -11,10 +11,33 @@ import {
   insertChallengeProgressSchema,
   insertMessageSchema,
   insertAchievementSchema,
-  insertInterestSchema
+  insertInterestSchema,
+  User,
+  Match
 } from "@shared/schema";
+import { MatchRecommendation } from "./ai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { setupAuth } from "./auth";
+
+// Add more detailed error logging
+const logError = (msg: string, error: any, req?: any) => {
+  console.error(`========== ERROR ==========`);
+  console.error(msg);
+  
+  if (req) {
+    console.error(`Session user:`, req.user);
+    console.error(`Request query:`, req.query);
+    console.error(`Request params:`, req.params);
+  }
+  
+  if (error instanceof Error) {
+    console.error(`Error message: ${error.message}`);
+    console.error(`Error stack: ${error.stack}`);
+  } else {
+    console.error(`Unknown error:`, error);
+  }
+  console.error(`===========================`);
+};
 
 // Auth middleware
 function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
