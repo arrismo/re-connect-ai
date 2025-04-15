@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { SuggestionContainer } from "@/components/suggestions/SuggestionContainer";
 
 export default function Challenges() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -160,10 +161,31 @@ export default function Challenges() {
     <div className="container mx-auto p-4 md:p-6 max-w-6xl">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">Recovery Challenges</h1>
-        <p className="text-neutral-600">
-          Curated recovery challenges to help you and your accountability partner maintain sobriety and track your progress.
-        </p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Recovery Challenges</h1>
+            <p className="text-neutral-600">
+              Curated recovery challenges to help you and your accountability partner maintain sobriety and track your progress.
+            </p>
+          </div>
+          
+          {/* Challenge Suggestions */}
+          <div className="w-full md:w-1/3">
+            <SuggestionContainer 
+              context={{ 
+                contextType: 'challenge',
+                additionalContext: {
+                  activeChallengesCount: activeChallenges.length,
+                  completedChallengesCount: completedChallenges.length,
+                  activeMatchesCount: activeMatches.length,
+                  challengeTypes: activeChallenges.map((c: any) => c.challengeType)
+                }
+              }}
+              max={2}
+              refreshInterval={300000} // 5 minutes
+            />
+          </div>
+        </div>
       </div>
       
       {/* Active Challenges Section */}

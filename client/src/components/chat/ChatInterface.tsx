@@ -119,6 +119,27 @@ export default function ChatInterface({ matchId, userId }: ChatInterfaceProps) {
         )}
       </div>
       
+      {/* Suggestions */}
+      {!isLoading && otherUser && (
+        <div className="px-4 pt-3">
+          <SuggestionContainer 
+            context={{ 
+              contextType: 'chat',
+              matchId,
+              additionalContext: {
+                otherUserName: otherUser.displayName,
+                messageCount: messages.length,
+                hasActiveChallenge: !!match?.activeChallenge,
+                challengeTitle: match?.activeChallenge?.title
+              }
+            }}
+            max={2}
+            autoFetch={true}
+            refreshInterval={300000} // 5 minutes
+          />
+        </div>
+      )}
+      
       {/* Messages Container */}
       <div 
         className="flex-1 overflow-y-auto p-4 space-y-4" 
