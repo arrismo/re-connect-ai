@@ -76,15 +76,15 @@ export function AIChallengeGenerator({ matchId, onChallengeSelected }: AIChallen
         className="mb-4 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 hover:bg-primary/10"
       >
         <Sparkles className="h-4 w-4 mr-2 text-primary" />
-        Generate Challenge with AI
+        Generate Recovery Challenge
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>AI Challenge Generator</DialogTitle>
+            <DialogTitle>Alcohol Recovery Challenge Generator</DialogTitle>
             <DialogDescription>
-              Use AI to generate personalized challenge ideas based on your match connection.
+              Our AI will generate personalized alcohol addiction recovery challenges for you and your accountability partner.
             </DialogDescription>
           </DialogHeader>
 
@@ -145,10 +145,18 @@ export function AIChallengeGenerator({ matchId, onChallengeSelected }: AIChallen
               </div>
             ) : (
               <div className="space-y-6 text-center p-4">
-                <p>Click the button below to generate AI-powered challenge ideas for you and your partner.</p>
+                <p>Click the button below to generate AI-powered alcohol recovery challenges for you and your accountability partner.</p>
+                <div className="text-sm text-neutral-600 mb-4">
+                  The AI will suggest challenges based on your profiles and shared interests. Choose from:
+                  <ul className="mt-2 list-disc text-left pl-6">
+                    <li><span className="font-medium">Sobriety Tracking:</span> Track your days without alcohol</li>
+                    <li><span className="font-medium">Daily Check-in:</span> Regular accountability communication</li>
+                    <li><span className="font-medium">Standard Challenge:</span> Step-by-step recovery activities</li>
+                  </ul>
+                </div>
                 <Button onClick={generateChallenges}>
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Generate Challenge Ideas
+                  Generate Recovery Challenges
                 </Button>
               </div>
             )}
