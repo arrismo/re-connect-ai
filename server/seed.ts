@@ -92,6 +92,120 @@ export async function seedDatabase() {
         }
       }
     }
+
+    // Get all meetings to check if we need to seed
+    const allMeetings = await storage.getAllMeetings();
+    if (allMeetings.length === 0) {
+      // Seed sample AA meetings with realistic coordinates for testing
+      const sampleMeetings = [
+        {
+          name: "Early Birds AA Group",
+          description: "Morning meeting focused on daily meditation and sharing",
+          meetingType: "aa",
+          address: "123 Recovery Way",
+          city: "New York",
+          state: "NY",
+          zipCode: "10001",
+          country: "USA",
+          latitude: 40.7128,
+          longitude: -74.0060,
+          dayOfWeek: 1, // Monday
+          startTime: "07:30",
+          endTime: "08:30",
+          isRecurring: true,
+          frequency: "weekly",
+          contactPhone: "212-555-1234",
+          contactEmail: "earlybirds@example.com",
+          website: "https://aarecovery.org/earlybirds"
+        },
+        {
+          name: "Serenity Now Group",
+          description: "Discussion-based meeting with focus on step work",
+          meetingType: "aa",
+          address: "456 Serenity Boulevard",
+          city: "New York",
+          state: "NY",
+          zipCode: "10002",
+          country: "USA",
+          latitude: 40.7282,
+          longitude: -73.9942,
+          dayOfWeek: 2, // Tuesday
+          startTime: "19:00",
+          endTime: "20:30",
+          isRecurring: true,
+          frequency: "weekly",
+          contactPhone: "212-555-5678",
+          contactEmail: "serenitynow@example.com",
+          website: "https://aarecovery.org/serenitynow"
+        },
+        {
+          name: "Gratitude AA Group",
+          description: "Beginner-friendly open discussion meeting",
+          meetingType: "aa",
+          address: "789 Thankful Street",
+          city: "Brooklyn",
+          state: "NY",
+          zipCode: "11201",
+          country: "USA",
+          latitude: 40.6958,
+          longitude: -73.9850,
+          dayOfWeek: 3, // Wednesday
+          startTime: "18:00",
+          endTime: "19:30",
+          isRecurring: true,
+          frequency: "weekly",
+          contactPhone: "718-555-1212",
+          contactEmail: "gratitude@example.com",
+          website: "https://aarecovery.org/gratitude"
+        },
+        {
+          name: "One Day at a Time Group",
+          description: "Speaker meeting with sharing time afterward",
+          meetingType: "aa",
+          address: "321 Present Avenue",
+          city: "Jersey City",
+          state: "NJ",
+          zipCode: "07302",
+          country: "USA",
+          latitude: 40.7216,
+          longitude: -74.0437,
+          dayOfWeek: 4, // Thursday
+          startTime: "19:30",
+          endTime: "21:00",
+          isRecurring: true,
+          frequency: "weekly",
+          contactPhone: "201-555-3434",
+          contactEmail: "onedayatatime@example.com",
+          website: "https://aarecovery.org/onedayatatime"
+        },
+        {
+          name: "Higher Power Fellowship",
+          description: "Spiritual focus with meditation and prayer",
+          meetingType: "aa",
+          address: "555 Faith Circle",
+          city: "Hoboken",
+          state: "NJ",
+          zipCode: "07030",
+          country: "USA",
+          latitude: 40.7439,
+          longitude: -74.0323,
+          dayOfWeek: 5, // Friday
+          startTime: "20:00",
+          endTime: "21:30",
+          isRecurring: true,
+          frequency: "weekly",
+          contactPhone: "201-555-8787",
+          contactEmail: "higherpower@example.com",
+          website: "https://aarecovery.org/higherpower"
+        }
+      ];
+
+      // Create sample meetings
+      for (const meetingData of sampleMeetings) {
+        await storage.createMeeting(meetingData);
+        console.log(`Created sample meeting: ${meetingData.name}`);
+      }
+    }
     
     console.log("Database seeding completed successfully");
   } catch (error) {

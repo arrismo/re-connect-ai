@@ -492,14 +492,15 @@ const GroupChallengeDetail: React.FC<GroupChallengeDetailProps> = ({
 
 interface GroupChallengesProps {
   userId?: number;
+  challenges?: any[]; // Allow passing challenges directly
 }
 
-const GroupChallenges: React.FC<GroupChallengesProps> = ({ userId }) => {
+const GroupChallenges: React.FC<GroupChallengesProps> = ({ userId, challenges: externalChallenges }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedChallenge, setSelectedChallenge] = useState<number | null>(null);
   
-  // Fetch active group challenges
+  // Fetch active group challenges if not provided externally
   const { 
     data: challengesData, 
     isLoading: isLoadingChallenges 
@@ -508,7 +509,8 @@ const GroupChallenges: React.FC<GroupChallengesProps> = ({ userId }) => {
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/group-challenges');
       return await res.json();
-    }
+    },
+    enabled: !externalChallenges
   });
   
   // Fetch user's challenges
@@ -521,7 +523,7 @@ const GroupChallenges: React.FC<GroupChallengesProps> = ({ userId }) => {
       const res = await apiRequest('GET', '/api/my-group-challenges');
       return await res.json();
     },
-    enabled: !!user
+    enabled: !!user && !externalChallenges
   });
   
   // Mutation to join a challenge
