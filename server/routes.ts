@@ -451,26 +451,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update match status
       const updatedMatch = await storage.updateMatchStatus(matchId, status);
       
-      // If match is accepted, award achievement to both users
+      // If match is accepted, award points to both users
       if (status === "active") {
-        // Add new connection achievement for both users
-        await storage.createAchievement({
-          userId: match.userId1,
-          type: "connection",
-          title: "New Connection",
-          description: "Connected with a new support partner",
-          points: 50
-        });
-        
-        await storage.createAchievement({
-          userId: match.userId2,
-          type: "connection",
-          title: "New Connection",
-          description: "Connected with a new support partner",
-          points: 50
-        });
-        
-        // Add points to both users
+        // Add points to both users for creating a new connection
         await storage.addUserPoints(match.userId1, 50);
         await storage.addUserPoints(match.userId2, 50);
       }
@@ -759,11 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Mark challenge as completed
         const completedChallenge = await storage.updateChallengeStatus(challengeId, "completed");
         
-        // Award points to both users (achievements removed)
-        
-        // Achievement code removed
-        
-        // Add points to both users
+        // Award points to both users
         await storage.addUserPoints(userId, 100);
         await storage.addUserPoints(otherUserId, 100);
         
