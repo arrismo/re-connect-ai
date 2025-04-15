@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import StatsCard from "@/components/shared/StatsCard";
 import MatchCard from "@/components/match/MatchCard";
 import ChallengeCard from "@/components/challenge/ChallengeCard";
-import { UsersRound, CheckSquare, Award } from "lucide-react";
+import { UsersRound, CheckSquare } from "lucide-react";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -57,7 +57,7 @@ export default function Dashboard() {
         />
         
         <StatsCard 
-          icon={<Award className="text-lg" />} 
+          icon={<CheckSquare className="text-lg" />} 
           label="Your Points" 
           value={user?.points || 0} 
           color="accent"
@@ -131,35 +131,7 @@ export default function Dashboard() {
         )}
       </section>
       
-      {/* Recent Achievements */}
-      {recentAchievements.length > 0 && (
-        <section className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Recent Achievements</h2>
-            <Link href="/achievements">
-              <a className="text-primary text-sm font-medium flex items-center hover:text-primary/80">
-                View all achievements
-              </a>
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {recentAchievements.map((achievement: any, index: number) => (
-              <div key={index} className="bg-white rounded-xl shadow-sm p-4">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
-                    <Award className="h-6 w-6" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="font-medium text-sm">{achievement.title}</h3>
-                    <p className="text-xs text-neutral-500">{achievement.points} points</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Achievements section removed */}
     </div>
   );
 }

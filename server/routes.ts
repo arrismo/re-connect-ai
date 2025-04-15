@@ -10,7 +10,7 @@ import {
   insertChallengeSchema,
   insertChallengeProgressSchema,
   insertMessageSchema,
-  insertAchievementSchema,
+  // Achievement import removed
   insertInterestSchema,
   User,
   Match,

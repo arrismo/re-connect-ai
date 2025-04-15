@@ -8,7 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Matches from "@/pages/matches";
 import Challenges from "@/pages/challenges";
 import Messages from "@/pages/messages";
-import Achievements from "@/pages/achievements";
+// Achievements import removed
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
@@ -55,11 +55,7 @@ function Router() {
         </AppShell>
       )} />
       
-      <ProtectedRoute path="/achievements" component={() => (
-        <AppShell>
-          <Achievements />
-        </AppShell>
-      )} />
+      {/* Achievements route removed */}
       
       <ProtectedRoute path="/settings" component={() => (
         <AppShell>

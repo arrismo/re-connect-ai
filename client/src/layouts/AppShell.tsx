@@ -5,7 +5,6 @@ import {
   UsersRound,
   CheckSquare,
   MessageSquare,
-  Award,
   Settings,
   Menu
 } from "lucide-react";
@@ -22,7 +21,6 @@ const navItems = [
   { icon: UsersRound, label: "Matches", href: "/matches" },
   { icon: CheckSquare, label: "Challenges", href: "/challenges", badge: true },
   { icon: MessageSquare, label: "Messages", href: "/messages" },
-  { icon: Award, label: "Achievements", href: "/achievements" },
   { icon: Settings, label: "Settings", href: "/settings" }
 ];
 
