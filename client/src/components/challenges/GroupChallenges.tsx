@@ -47,9 +47,7 @@ const ChallengeProgress: React.FC<ChallengeProgressProps> = ({ progress }) => {
         <span>Progress</span>
         <span>{progressValue}%</span>
       </div>
-      <Progress value={progressValue} className="h-2">
-        <ProgressIndicator style={{ transform: `translateX(-${100 - progressValue}%)` }} />
-      </Progress>
+      <Progress value={progressValue} className="h-2" />
     </div>
   );
 };
