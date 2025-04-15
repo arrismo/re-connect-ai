@@ -80,7 +80,7 @@ export class MemStorage implements IStorage {
   challengeIdCounter: number;
   progressIdCounter: number;
   messageIdCounter: number;
-  achievementIdCounter: number;
+  // achievementIdCounter removed
   interestIdCounter: number;
 
   constructor() {
@@ -89,7 +89,7 @@ export class MemStorage implements IStorage {
     this.challenges = new Map();
     this.challengeProgresses = new Map();
     this.messages = new Map();
-    this.achievements = new Map();
+    // achievements removed
     this.interests = new Map();
     
     this.userIdCounter = 1;
@@ -97,7 +97,7 @@ export class MemStorage implements IStorage {
     this.challengeIdCounter = 1;
     this.progressIdCounter = 1;
     this.messageIdCounter = 1;
-    this.achievementIdCounter = 1;
+    // achievementIdCounter removed
     this.interestIdCounter = 1;
   }
 
@@ -502,28 +502,7 @@ export class MemStorage implements IStorage {
     }
   }
   
-  // ==========================
-  // Achievement related methods
-  // ==========================
-  
-  async createAchievement(achievementData: InsertAchievement): Promise<Achievement> {
-    const id = this.achievementIdCounter++;
-    const now = new Date();
-    const achievement: Achievement = { 
-      ...achievementData, 
-      id,
-      earnedAt: now
-    };
-    
-    this.achievements.set(id, achievement);
-    return achievement;
-  }
-  
-  async getUserAchievements(userId: number): Promise<Achievement[]> {
-    return Array.from(this.achievements.values())
-      .filter(achievement => achievement.userId === userId)
-      .sort((a, b) => b.earnedAt.getTime() - a.earnedAt.getTime());
-  }
+  // Achievement methods removed
   
   // ==========================
   // Interest related methods
