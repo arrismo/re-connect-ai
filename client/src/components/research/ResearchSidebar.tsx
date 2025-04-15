@@ -1,15 +1,11 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2, BookOpen, ArrowRightCircle, SearchIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Collapsible, 
-  CollapsibleContent, 
-  CollapsibleTrigger 
-} from "@/components/ui/collapsible";
+import { useState, useEffect } from 'react';
+import { X, Search, Loader2 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface ResearchItem {
   title: string;
@@ -22,172 +18,160 @@ interface ResearchResponse {
 }
 
 interface ResearchSidebarProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
-export default function ResearchSidebar({ isOpen, onClose }: ResearchSidebarProps) {
-  const [activeTab, setActiveTab] = useState("aa");
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  // Fetch AA research
-  const { 
-    data: aaData, 
-    isLoading: aaLoading,
-    refetch: refetchAA 
-  } = useQuery<ResearchResponse>({
-    queryKey: ['/api/research', 'alcoholics anonymous', searchQuery],
-    queryFn: () => fetch(`/api/research?topic=alcoholics anonymous${searchQuery ? `&query=${encodeURIComponent(searchQuery)}` : ''}`).then(res => res.json()),
-    enabled: isOpen && activeTab === "aa",
-  });
-  
-  // Fetch accountability partner research
-  const { 
-    data: partnerData, 
-    isLoading: partnerLoading,
-    refetch: refetchPartners 
-  } = useQuery<ResearchResponse>({
-    queryKey: ['/api/research', 'accountability partners', searchQuery],
-    queryFn: () => fetch(`/api/research?topic=accountability partners${searchQuery ? `&query=${encodeURIComponent(searchQuery)}` : ''}`).then(res => res.json()),
-    enabled: isOpen && activeTab === "partners",
-  });
-  
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Trigger a refetch with the new search query
-    if (activeTab === "aa") {
-      refetchAA();
-    } else if (activeTab === "partners") {
-      refetchPartners();
+const TOPICS = [
+  { id: 'aa', label: 'Alcoholics Anonymous', description: 'The 12 steps and principles of AA' },
+  { id: 'accountability', label: 'Accountability Partners', description: 'Benefits and practices of accountability relationships' }
+];
+
+export default function ResearchSidebar({ onClose }: ResearchSidebarProps) {
+  const [activeTab, setActiveTab] = useState<string>(TOPICS[0].id);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [research, setResearch] = useState<Record<string, ResearchItem[]>>({});
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  // Fetch research data when tab changes
+  useEffect(() => {
+    fetchResearch(activeTab);
+  }, [activeTab]);
+
+  // Function to fetch research data
+  const fetchResearch = async (topic: string, searchQuery?: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const queryParams = new URLSearchParams({ 
+        topic,
+        ...(searchQuery && { query: searchQuery })
+      });
+      
+      const response = await fetch(`/api/research?${queryParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch research information');
+      }
+      
+      const data: ResearchResponse = await response.json();
+      setResearch(prev => ({ ...prev, [topic]: data.researchItems }));
+    } catch (error) {
+      console.error('Error fetching research:', error);
+      setError('Unable to load research information. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
-  
-  // If the sidebar is not open, don't render anything
-  if (!isOpen) return null;
-  
+
+  // Handle search
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchResearch(activeTab, query);
+  };
+
+  // Toggle item expansion
+  const toggleItem = (itemTitle: string) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [itemTitle]: !prev[itemTitle]
+    }));
+  };
+
   return (
-    <div className="fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-lg border-l border-neutral-200 z-50 flex flex-col">
-      <div className="p-4 border-b flex justify-between items-center">
-        <h2 className="font-semibold text-lg flex items-center">
-          <BookOpen className="mr-2 h-5 w-5 text-primary" />
-          Research Resources
-        </h2>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <ArrowRightCircle className="h-5 w-5" />
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-white shadow-xl z-50 flex flex-col border-l">
+      <div className="flex items-center justify-between p-4 border-b">
+        <h2 className="text-lg font-semibold">Recovery Research</h2>
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close sidebar">
+          <X className="h-4 w-4" />
         </Button>
       </div>
-      
-      <div className="p-4 border-b">
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <Input
-            placeholder="Search for specific topics..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <TabsList className="mx-4 mt-4 justify-start">
+          {TOPICS.map(topic => (
+            <TabsTrigger key={topic.id} value={topic.id} className="flex-1">
+              {topic.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <form onSubmit={handleSearch} className="px-4 py-2 flex gap-2">
+          <Input 
+            placeholder="Search..." 
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             className="flex-1"
           />
-          <Button type="submit" size="icon">
-            <SearchIcon className="h-4 w-4" />
+          <Button type="submit" size="icon" disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           </Button>
         </form>
-      </div>
-      
-      <Tabs defaultValue="aa" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="justify-start px-4 pt-4">
-          <TabsTrigger value="aa">Alcoholics Anonymous</TabsTrigger>
-          <TabsTrigger value="partners">Accountability Partners</TabsTrigger>
-        </TabsList>
+
+        <div className="p-4 pb-2">
+          <p className="text-sm text-muted-foreground">
+            {TOPICS.find(t => t.id === activeTab)?.description}
+          </p>
+        </div>
         
-        <TabsContent value="aa" className="flex-1 p-0">
-          <ScrollArea className="h-full p-4">
-            {aaLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : aaData?.researchItems && aaData.researchItems.length > 0 ? (
-              <div className="space-y-4">
-                {aaData.researchItems.map((item: ResearchItem, index: number) => (
-                  <ResearchItem
-                    key={`aa-research-${index}`}
-                    title={item.title}
-                    content={item.content}
-                    source={item.source}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <ResearchItem
-                  title="AA Principles and Core Practices"
-                  content="Alcoholics Anonymous (AA) is founded on 12 steps and 12 traditions. The core principles include admitting powerlessness over alcohol, seeking help from a higher power, making amends for past wrongs, and helping other alcoholics. Research indicates these principles are effective because they address both psychological and social aspects of addiction recovery."
-                  source="Journal of Substance Abuse Treatment (2018)"
-                />
-                
-                <ResearchItem
-                  title="Efficacy of AA Participation"
-                  content="Multiple peer-reviewed studies, including a 2020 Cochrane review, found that AA participation leads to higher rates of abstinence compared to other treatments. The review of 27 studies with 10,565 participants showed that AA and Twelve-Step Facilitation (TSF) interventions significantly increased abstinence rates and reduced alcohol-related consequences."
-                  source="Cochrane Database of Systematic Reviews (2020)"
-                />
-              </div>
-            )}
-          </ScrollArea>
-        </TabsContent>
-        
-        <TabsContent value="partners" className="flex-1 p-0">
-          <ScrollArea className="h-full p-4">
-            {partnerLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : partnerData?.researchItems && partnerData.researchItems.length > 0 ? (
-              <div className="space-y-4">
-                {partnerData.researchItems.map((item: ResearchItem, index: number) => (
-                  <ResearchItem
-                    key={`partner-research-${index}`}
-                    title={item.title}
-                    content={item.content}
-                    source={item.source}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <ResearchItem
-                  title="Accountability Partnerships in Recovery"
-                  content="Peer-reviewed research shows that accountability partnerships significantly improve recovery outcomes. A structured accountability relationship creates a system of regular check-ins and mutual support that can detect early warning signs of relapse. Studies demonstrate that individuals with dedicated accountability partners maintain sobriety 37% longer than those without such support."
-                  source="Journal of Substance Abuse Treatment (2021)"
-                />
-                
-                <ResearchItem
-                  title="Mechanisms of Effective Accountability"
-                  content="Research identifies four key mechanisms that make accountability partnerships effective: (1) regular self-disclosure that builds honesty, (2) consistent monitoring that reinforces sobriety-supporting behaviors, (3) positive peer pressure that encourages healthy choices, and (4) reciprocal support that creates mutual investment in recovery outcomes."
-                  source="Addiction Science & Clinical Practice (2020)"
-                />
-              </div>
-            )}
-          </ScrollArea>
-        </TabsContent>
+        <Separator />
+
+        <div className="flex-1 overflow-hidden">
+          {TOPICS.map(topic => (
+            <TabsContent key={topic.id} value={topic.id} className="flex-1 h-full mt-0">
+              <ScrollArea className="h-full p-4">
+                {loading ? (
+                  <div className="flex justify-center items-center h-20">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : error ? (
+                  <div className="p-4 text-center text-destructive">
+                    <p>{error}</p>
+                  </div>
+                ) : research[topic.id]?.length === 0 ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    <p>No research information available. Try a different search term.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {research[topic.id]?.map((item, idx) => (
+                      <Collapsible 
+                        key={idx} 
+                        open={expandedItems[item.title]} 
+                        onOpenChange={() => toggleItem(item.title)}
+                        className="border rounded-lg"
+                      >
+                        <CollapsibleTrigger asChild>
+                          <div className="p-3 cursor-pointer hover:bg-accent rounded-t-lg flex justify-between items-center">
+                            <h3 className="font-medium">{item.title}</h3>
+                            <span className="text-xs text-muted-foreground">{expandedItems[item.title] ? 'Less' : 'More'}</span>
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="p-3 pt-0 text-sm space-y-2">
+                          <Separator className="my-2" />
+                          <div className="whitespace-pre-wrap">{item.content}</div>
+                          {item.source && (
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong>Source:</strong> {item.source}
+                            </div>
+                          )}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+          ))}
+        </div>
       </Tabs>
-      
-      <div className="p-4 border-t text-xs text-neutral-500">
-        Information powered by Gemini AI, based on peer-reviewed research on addiction recovery.
+
+      <div className="p-3 border-t">
+        <p className="text-xs text-center text-muted-foreground">
+          Information sourced from peer-reviewed research on recovery principles
+        </p>
       </div>
     </div>
-  );
-}
-
-function ResearchItem({ title, content, source }: { title: string; content: string; source: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  
-  return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border rounded-lg overflow-hidden">
-      <CollapsibleTrigger className="flex justify-between items-center w-full p-3 bg-neutral-50 hover:bg-neutral-100 text-left font-medium">
-        {title}
-        <div className="text-xs text-primary font-normal">{isOpen ? 'Close' : 'Read more'}</div>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="p-3 text-sm">
-        <p className="mb-2">{content}</p>
-        <div className="text-xs text-neutral-500">Source: {source}</div>
-      </CollapsibleContent>
-    </Collapsible>
   );
 }
