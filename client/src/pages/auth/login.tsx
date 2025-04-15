@@ -36,6 +36,7 @@ export default function Login() {
 
     // Submit login
     try {
+      console.log("Logging in with:", { email, password });
       // Use the auth context login method
       auth.loginMutation.mutate(
         { email, password },
