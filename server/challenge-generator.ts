@@ -95,9 +95,9 @@ async function generateWithGemini(
     experiences: user2.experiences || [],
   };
   
-  // Create a prompt for the Gemini API
+  // Create a prompt for the Gemini API focused on alcohol addiction recovery
   const geminiPrompt = `
-    You are an accountability partner matchmaking expert. Generate 3 challenges for two people who are working to support each other on their personal growth journeys.
+    You are an alcohol addiction recovery specialist and accountability partner expert. Generate 3 challenges specifically focused on supporting alcohol sobriety and recovery for two people who are working together as accountability partners.
 
     User 1: ${JSON.stringify(userInfo1)}
     User 2: ${JSON.stringify(userInfo2)}
@@ -105,9 +105,9 @@ async function generateWithGemini(
     
     ${prompt || ""}
     
-    Create 3 unique challenges they can do together. For each challenge, include:
+    Create 3 unique alcohol recovery-focused challenges they can do together. For each challenge, include:
     1. A title (keep it under 50 characters)
-    2. A description (2-3 sentences explaining the challenge)
+    2. A description (2-3 sentences explaining the challenge and how it helps with alcohol recovery)
     3. Challenge type (one of these three types):
        - "generic" (normal challenge with steps)
        - "days_sober" (for tracking sobriety days)
@@ -125,7 +125,7 @@ async function generateWithGemini(
       ...
     ]
     
-    Include at least one specialized challenge type (either "days_sober" or "check_in_streak") if appropriate based on the users' backgrounds.
+    IMPORTANT: All challenges MUST be directly related to alcohol addiction recovery. Always include at least one "days_sober" challenge to help users track their sobriety journey.
   `;
 
   try {
@@ -157,25 +157,25 @@ async function generateWithGemini(
       console.error("Error parsing Gemini response:", parseError);
       console.log("Raw response:", text);
       
-      // Return a fallback challenge if we can't parse the JSON
+      // Return fallback alcohol recovery challenges if we can't parse the JSON
       return [
         {
-          title: "Weekly Goal Setting",
-          description: "Set weekly goals together and check in every day to hold each other accountable for progress.",
-          challengeType: "generic",
-          totalSteps: 5
+          title: "Sobriety Tracking",
+          description: "Track your days of sobriety and celebrate key milestones together. Share daily wins and challenges to maintain accountability.",
+          challengeType: "days_sober",
+          totalSteps: 4  // Represents 7/30/90/365 day milestones
         },
         {
-          title: "Daily Mindfulness Practice",
-          description: "Commit to a 10-minute mindfulness meditation every day and share your experience with your partner.",
+          title: "Trigger Identification & Management",
+          description: "Work together to identify personal triggers for alcohol cravings and develop healthy coping strategies. Document and share your progress daily.",
           challengeType: "check_in_streak",
           totalSteps: 3
         },
         {
-          title: "Healthy Habit Building",
-          description: "Choose one healthy habit to build together. Track your progress daily and celebrate milestones.",
+          title: "Sober Activities Discovery",
+          description: "Discover and engage in five new activities that are enjoyable without alcohol. Share your experiences and feedback with your accountability partner.",
           challengeType: "generic",
-          totalSteps: 7
+          totalSteps: 5
         }
       ];
     }
