@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
 import { suggestionService } from "./suggestion-service";
+import { researchService } from "./research-service";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
