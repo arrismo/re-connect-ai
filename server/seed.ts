@@ -94,7 +94,17 @@ export async function seedDatabase() {
       for (const userData of testUsers) {
         const existingUser = await storage.getUserByUsername(userData.username);
         if (!existingUser) {
-          const hashedPassword = await hashPassword(userData.password);
+          // For the special test user, use a pre-hashed password
+          let hashedPassword;
+          if (userData.username === 'testuser') {
+            // This is a pre-hashed 'test123' password with known salt for easier testing
+            hashedPassword = '83276b7e784cce9b492e31ace7ca8d8f5ded5d24d6c59a2b53b7d0852ec9a98e3409d1fe8414e0031b52791ad817b759bc4eddbe3d18ffd23abccb71fcbbee68.1234567890abcdef';
+            console.log('Using pre-hashed password for test user');
+          } else {
+            // For other users, hash the password normally
+            hashedPassword = await hashPassword(userData.password);
+          }
+          
           await storage.createUser({
             ...userData,
             password: hashedPassword
