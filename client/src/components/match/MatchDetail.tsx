@@ -7,7 +7,6 @@ import { Link } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { SuggestionContainer } from "@/components/suggestions/SuggestionContainer";
 import {
   AlertDialog,
   AlertDialogAction,

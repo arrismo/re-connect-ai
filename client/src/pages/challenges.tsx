@@ -8,7 +8,6 @@ import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { SuggestionContainer } from "@/components/suggestions/SuggestionContainer";
 
 export default function Challenges() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
