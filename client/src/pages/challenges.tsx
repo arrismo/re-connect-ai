@@ -158,17 +158,25 @@ export default function Challenges() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-6xl">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold mb-2">Recovery Challenges</h1>
+        <p className="text-neutral-600">
+          AI-generated recovery challenges to help you and your accountability partner maintain sobriety.
+        </p>
+      </div>
+      
       {/* Active Challenges Section */}
       <section className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Active Challenges</h2>
+          <h2 className="text-xl font-bold">Active Recovery Challenges</h2>
           <Button 
             onClick={() => setCreateDialogOpen(true)}
             className="text-primary bg-white border border-primary hover:bg-primary/5 text-sm"
             variant="outline"
             disabled={activeMatches.length === 0}
           >
-            Create challenge <Plus className="ml-2 h-4 w-4" />
+            Generate New Challenge <Plus className="ml-2 h-4 w-4" />
           </Button>
         </div>
         
