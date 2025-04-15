@@ -10,7 +10,15 @@ import {
   Message,
   InsertMessage,
   Interest,
-  InsertInterest
+  InsertInterest,
+  Meeting,
+  InsertMeeting,
+  MeetingAttendee,
+  InsertMeetingAttendee,
+  GroupChallenge,
+  InsertGroupChallenge,
+  GroupChallengeParticipant,
+  InsertGroupChallengeParticipant
 } from "@shared/schema";
 import { DatabaseStorage } from "./DatabaseStorage";
 
@@ -64,6 +72,34 @@ export interface IStorage {
   // Interest related methods
   createInterest(interest: InsertInterest): Promise<Interest>;
   getAllInterests(): Promise<Interest[]>;
+  
+  // Meeting related methods
+  getMeeting(id: number): Promise<Meeting | undefined>;
+  getAllMeetings(limit?: number, offset?: number): Promise<Meeting[]>;
+  getMeetingsByLocation(latitude: number, longitude: number, radiusInKm: number): Promise<Meeting[]>;
+  createMeeting(meeting: InsertMeeting): Promise<Meeting>;
+  updateMeeting(id: number, meeting: Partial<Meeting>): Promise<Meeting>;
+  deleteMeeting(id: number): Promise<boolean>;
+  
+  // Meeting Attendee related methods
+  getMeetingAttendees(meetingId: number): Promise<MeetingAttendee[]>;
+  getUserMeetingAttendance(userId: number): Promise<MeetingAttendee[]>;
+  attendMeeting(attendee: InsertMeetingAttendee): Promise<MeetingAttendee>;
+  updateAttendanceStatus(meetingId: number, userId: number, status: string): Promise<MeetingAttendee>;
+  checkInToMeeting(meetingId: number, userId: number): Promise<MeetingAttendee>;
+  
+  // Group Challenge related methods
+  getGroupChallenge(id: number): Promise<GroupChallenge | undefined>;
+  getActiveGroupChallenges(limit?: number, offset?: number): Promise<GroupChallenge[]>;
+  getUserGroupChallenges(userId: number): Promise<GroupChallenge[]>;
+  createGroupChallenge(challenge: InsertGroupChallenge): Promise<GroupChallenge>;
+  updateGroupChallenge(id: number, challenge: Partial<GroupChallenge>): Promise<GroupChallenge>;
+  
+  // Group Challenge Participant related methods
+  getGroupChallengeParticipants(groupChallengeId: number): Promise<GroupChallengeParticipant[]>;
+  joinGroupChallenge(participant: InsertGroupChallengeParticipant): Promise<GroupChallengeParticipant>;
+  updateGroupChallengeProgress(groupChallengeId: number, userId: number, stepsCompleted: number): Promise<GroupChallengeParticipant>;
+  getGroupChallengeLeaderboard(groupChallengeId: number, limit?: number): Promise<GroupChallengeParticipant[]>;
 }
 
 export class MemStorage implements IStorage {
