@@ -38,7 +38,7 @@ export default function Login() {
     try {
       // Use the auth context login method
       auth.loginMutation.mutate(
-        { username: email, password }, // The API expects 'username' but we're using email field for input
+        { email, password },
         {
           onError: (error) => {
             console.error("Login error:", error);
