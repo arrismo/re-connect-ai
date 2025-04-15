@@ -593,45 +593,45 @@ export class MemStorage implements IStorage {
   }
   
   async getAllMeetings(limit?: number, offset?: number): Promise<Meeting[]> {
-    const meetings = Array.from(this.meetings.values())
-      .sort((a, b) => {
-        // Sort by day of week first, then by start time
-        if (a.dayOfWeek !== b.dayOfWeek) {
-          return (a.dayOfWeek || 0) - (b.dayOfWeek || 0);
-        }
-        return (a.startTime || '').localeCompare(b.startTime || '');
-      });
+    let meetings = Array.from(this.meetings.values());
     
-    const offsetValue = offset || 0;
-    const limitValue = limit || meetings.length;
+    if (offset !== undefined) {
+      meetings = meetings.slice(offset);
+    }
     
-    return meetings.slice(offsetValue, offsetValue + limitValue);
+    if (limit !== undefined) {
+      meetings = meetings.slice(0, limit);
+    }
+    
+    return meetings;
   }
   
   async getMeetingsByLocation(latitude: number, longitude: number, radiusInKm: number): Promise<Meeting[]> {
-    // Filter meetings based on distance from provided coordinates
+    // Calculate distance between two lat/lng points using the Haversine formula
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+      const R = 6371; // Radius of the Earth in km
+      const dLat = (lat2 - lat1) * (Math.PI / 180);
+      const dLon = (lon2 - lon1) * (Math.PI / 180);
+      const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+    
     return Array.from(this.meetings.values()).filter(meeting => {
       if (!meeting.latitude || !meeting.longitude) return false;
       
-      // Calculate distance using Haversine formula
-      const R = 6371; // Earth radius in kilometers
-      const dLat = this.toRad(meeting.latitude - latitude);
-      const dLon = this.toRad(meeting.longitude - longitude);
-      
-      const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(this.toRad(latitude)) * Math.cos(this.toRad(meeting.latitude)) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      const distance = R * c;
+      const distance = calculateDistance(
+        latitude,
+        longitude,
+        meeting.latitude,
+        meeting.longitude
+      );
       
       return distance <= radiusInKm;
     });
-  }
-  
-  private toRad(value: number): number {
-    return value * Math.PI / 180;
   }
   
   async createMeeting(meetingData: InsertMeeting): Promise<Meeting> {
@@ -654,8 +654,8 @@ export class MemStorage implements IStorage {
       throw new Error(`Meeting with id ${id} not found`);
     }
     
-    const updatedMeeting = { 
-      ...meeting, 
+    const updatedMeeting = {
+      ...meeting,
       ...meetingData,
       updatedAt: new Date()
     };
@@ -670,15 +670,13 @@ export class MemStorage implements IStorage {
       return false;
     }
     
-    // Delete all attendee records for this meeting
-    const attendees = await this.getMeetingAttendees(id);
-    for (const attendee of attendees) {
-      const key = `${attendee.meetingId}-${attendee.userId}`;
-      this.meetingAttendees.delete(key);
-    }
+    // Delete attendees first
+    Array.from(this.meetingAttendees.keys())
+      .filter(key => key.startsWith(`${id}-`))
+      .forEach(key => this.meetingAttendees.delete(key));
     
-    this.meetings.delete(id);
-    return true;
+    // Then delete the meeting
+    return this.meetings.delete(id);
   }
   
   // ==========================
@@ -696,6 +694,19 @@ export class MemStorage implements IStorage {
   }
   
   async attendMeeting(attendeeData: InsertMeetingAttendee): Promise<MeetingAttendee> {
+    const key = `${attendeeData.meetingId}-${attendeeData.userId}`;
+    const existingAttendee = this.meetingAttendees.get(key);
+    
+    if (existingAttendee) {
+      // Update existing attendance
+      return this.updateAttendanceStatus(
+        attendeeData.meetingId,
+        attendeeData.userId,
+        attendeeData.status || 'going'
+      );
+    }
+    
+    // Create new attendance
     const id = this.meetingAttendeeIdCounter++;
     const now = new Date();
     const attendee: MeetingAttendee = {
@@ -704,7 +715,6 @@ export class MemStorage implements IStorage {
       createdAt: now
     };
     
-    const key = `${attendeeData.meetingId}-${attendeeData.userId}`;
     this.meetingAttendees.set(key, attendee);
     return attendee;
   }
@@ -721,7 +731,11 @@ export class MemStorage implements IStorage {
       });
     }
     
-    const updatedAttendee = { ...attendee, status };
+    const updatedAttendee = {
+      ...attendee,
+      status
+    };
+    
     this.meetingAttendees.set(key, updatedAttendee);
     return updatedAttendee;
   }
@@ -729,7 +743,6 @@ export class MemStorage implements IStorage {
   async checkInToMeeting(meetingId: number, userId: number): Promise<MeetingAttendee> {
     const key = `${meetingId}-${userId}`;
     const attendee = this.meetingAttendees.get(key);
-    const now = new Date();
     
     if (!attendee) {
       return this.attendMeeting({
@@ -737,14 +750,14 @@ export class MemStorage implements IStorage {
         userId,
         status: 'going',
         checkedIn: true,
-        checkInTime: now
+        checkInTime: new Date()
       });
     }
     
-    const updatedAttendee = { 
-      ...attendee, 
+    const updatedAttendee = {
+      ...attendee,
       checkedIn: true,
-      checkInTime: now
+      checkInTime: new Date()
     };
     
     this.meetingAttendees.set(key, updatedAttendee);
@@ -760,14 +773,157 @@ export class MemStorage implements IStorage {
   }
   
   async getActiveGroupChallenges(limit?: number, offset?: number): Promise<GroupChallenge[]> {
-    const challenges = Array.from(this.groupChallenges.values())
-      .filter(challenge => challenge.status === 'active' && challenge.isPublic)
-      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+    let challenges = Array.from(this.groupChallenges.values())
+      .filter(challenge => challenge.status === 'active');
     
-    const offsetValue = offset || 0;
-    const limitValue = limit || challenges.length;
+    if (offset !== undefined) {
+      challenges = challenges.slice(offset);
+    }
     
-    return challenges.slice(offsetValue, offsetValue + limitValue);
+    if (limit !== undefined) {
+      challenges = challenges.slice(0, limit);
+    }
+    
+    return challenges;
+  }
+  
+  async getUserGroupChallenges(userId: number): Promise<GroupChallenge[]> {
+    // Get challenge IDs where user is participating
+    const participations = Array.from(this.groupChallengeParticipants.values())
+      .filter(participant => participant.userId === userId);
+    
+    if (participations.length === 0) {
+      return [];
+    }
+    
+    const challengeIds = participations.map(p => p.groupChallengeId);
+    
+    return Array.from(this.groupChallenges.values())
+      .filter(challenge => challengeIds.includes(challenge.id));
+  }
+  
+  async createGroupChallenge(challengeData: InsertGroupChallenge): Promise<GroupChallenge> {
+    const id = this.groupChallengeIdCounter++;
+    const now = new Date();
+    const challenge: GroupChallenge = {
+      ...challengeData,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.groupChallenges.set(id, challenge);
+    return challenge;
+  }
+  
+  async updateGroupChallenge(id: number, challengeData: Partial<GroupChallenge>): Promise<GroupChallenge> {
+    const challenge = await this.getGroupChallenge(id);
+    if (!challenge) {
+      throw new Error(`Group challenge with id ${id} not found`);
+    }
+    
+    const updatedChallenge = {
+      ...challenge,
+      ...challengeData,
+      updatedAt: new Date()
+    };
+    
+    this.groupChallenges.set(id, updatedChallenge);
+    return updatedChallenge;
+  }
+  
+  // ==========================
+  // Group Challenge Participant related methods
+  // ==========================
+  
+  async getGroupChallengeParticipants(groupChallengeId: number): Promise<GroupChallengeParticipant[]> {
+    return Array.from(this.groupChallengeParticipants.values())
+      .filter(participant => participant.groupChallengeId === groupChallengeId);
+  }
+  
+  async joinGroupChallenge(participantData: InsertGroupChallengeParticipant): Promise<GroupChallengeParticipant> {
+    const key = `${participantData.groupChallengeId}-${participantData.userId}`;
+    const existingParticipant = this.groupChallengeParticipants.get(key);
+    
+    if (existingParticipant) {
+      // Update status if provided and different
+      if (participantData.status && participantData.status !== existingParticipant.status) {
+        const updatedParticipant = {
+          ...existingParticipant,
+          status: participantData.status
+        };
+        
+        this.groupChallengeParticipants.set(key, updatedParticipant);
+        return updatedParticipant;
+      }
+      
+      return existingParticipant;
+    }
+    
+    // Create new participation
+    const id = this.groupChallengeParticipantIdCounter++;
+    const now = new Date();
+    const participant: GroupChallengeParticipant = {
+      ...participantData,
+      id,
+      joinedAt: now,
+      lastUpdated: now,
+      stepsCompleted: 0,
+      pointsEarned: 0
+    };
+    
+    this.groupChallengeParticipants.set(key, participant);
+    return participant;
+  }
+  
+  async updateGroupChallengeProgress(groupChallengeId: number, userId: number, stepsCompleted: number): Promise<GroupChallengeParticipant> {
+    const key = `${groupChallengeId}-${userId}`;
+    const participant = this.groupChallengeParticipants.get(key);
+    
+    if (!participant) {
+      return this.joinGroupChallenge({
+        groupChallengeId,
+        userId,
+        stepsCompleted,
+        status: 'active'
+      });
+    }
+    
+    // Get challenge to calculate points
+    const challenge = await this.getGroupChallenge(groupChallengeId);
+    let pointsEarned = participant.pointsEarned || 0;
+    
+    if (challenge) {
+      // Simple calculation: points based on percentage completion
+      const progressPercentage = stepsCompleted / challenge.totalSteps;
+      pointsEarned = Math.round(progressPercentage * 100);
+    }
+    
+    const updatedParticipant = {
+      ...participant,
+      stepsCompleted,
+      pointsEarned,
+      lastUpdated: new Date()
+    };
+    
+    this.groupChallengeParticipants.set(key, updatedParticipant);
+    return updatedParticipant;
+  }
+  
+  async getGroupChallengeLeaderboard(groupChallengeId: number, limit?: number): Promise<GroupChallengeParticipant[]> {
+    let participants = Array.from(this.groupChallengeParticipants.values())
+      .filter(participant => participant.groupChallengeId === groupChallengeId)
+      .sort((a, b) => (b.pointsEarned || 0) - (a.pointsEarned || 0));
+    
+    if (limit !== undefined) {
+      participants = participants.slice(0, limit);
+    }
+    
+    return participants;
+  }
+  
+  private toRad(value: number): number {
+    return value * Math.PI / 180;
   }
   
   async getUserGroupChallenges(userId: number): Promise<GroupChallenge[]> {
