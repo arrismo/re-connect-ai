@@ -13,10 +13,10 @@ export default function AuthPage() {
 
   // Redirect to home if already authenticated
   useEffect(() => {
-    if (auth.isAuthenticated && !auth.loading) {
+    if (auth.user && !auth.isLoading) {
       setLocation("/dashboard");
     }
-  }, [auth.isAuthenticated, auth.loading, setLocation]);
+  }, [auth.user, auth.isLoading, setLocation]);
 
   // If path is exactly /auth, redirect to the login page
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function AuthPage() {
     }
   }, [isExactAuthRoute, setLocation]);
 
-  if (auth.loading) {
+  if (auth.isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin h-8 w-8 rounded-full border-t-2 border-primary"></div>
@@ -38,7 +38,7 @@ export default function AuthPage() {
   }
 
   // If user is authenticated, nothing will render as they'll be redirected
-  if (auth.isAuthenticated) return null;
+  if (auth.user) return null;
 
   // Set default component to Login if not on a specific auth route
   if (!isLoginRoute && !isRegisterRoute && !isExactAuthRoute) {
