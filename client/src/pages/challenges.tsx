@@ -176,7 +176,7 @@ export default function Challenges() {
             variant="outline"
             disabled={activeMatches.length === 0}
           >
-            Generate New Challenge <Plus className="ml-2 h-4 w-4" />
+            Select New Challenge <Plus className="ml-2 h-4 w-4" />
           </Button>
         </div>
         
