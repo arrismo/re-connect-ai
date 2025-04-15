@@ -37,8 +37,9 @@ const MeetingFinder: React.FC<MeetingFinderProps> = ({ onSelectMeeting }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [meetingType, setMeetingType] = useState<string>('all');
   const [filterOpen, setFilterOpen] = useState<boolean>(false);
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [searchRadius, setSearchRadius] = useState<number>(10); // kilometers
+  // Default to New York City coordinates (40.7128, -74.0060)
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number}>({lat: 40.7128, lng: -74.0060});
+  const [searchRadius, setSearchRadius] = useState<number>(50); // kilometers - larger default radius
   const [useCurrentLocation, setUseCurrentLocation] = useState<boolean>(false);
 
   // Get user's current location

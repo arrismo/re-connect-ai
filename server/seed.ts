@@ -47,6 +47,17 @@ export async function seedDatabase() {
     if (allUsers.length <= 1) {
       // Seed test users for matching
       const testUsers = [
+        // Special test user for development login
+        {
+          username: "testuser",
+          password: "test123",
+          displayName: "Test User",
+          email: "test@example.com",
+          bio: "Test account for development",
+          interests: ["Addiction Recovery", "Habit Building"],
+          goals: ["Stay sober", "Build healthy habits"],
+          experiences: ["Recovery journey", "Community support"],
+        },
         {
           username: "testuser1",
           password: "password123",
