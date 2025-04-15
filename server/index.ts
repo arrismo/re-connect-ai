@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
+import { suggestionService } from "./suggestion-service";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
 app.use(express.json());
@@ -75,6 +77,18 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize suggestion service with Gemini API key
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      console.log("GEMINI_API_KEY is set and valid");
+      await suggestionService.initialize(process.env.GEMINI_API_KEY);
+    } catch (error) {
+      console.error("Failed to initialize suggestion service with Gemini API:", error);
+    }
+  } else {
+    console.warn("GEMINI_API_KEY is not set, suggestion service will not be available");
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -20,6 +20,7 @@ import { MatchRecommendation } from "./ai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { setupAuth } from "./auth";
 import { WebSocketServer, WebSocket } from 'ws';
+import { suggestionService, SuggestionContext, Suggestion } from './suggestion-service';
 
 // Add more detailed error logging
 const logError = (msg: string, error: any, req?: any) => {
