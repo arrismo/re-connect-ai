@@ -1,11 +1,10 @@
 import { 
-  users, challenges, challengeProgresses, matches, messages, achievements, interests,
+  users, challenges, challengeProgresses, matches, messages, interests,
   type User, type InsertUser, 
   type Match, type InsertMatch, 
   type Challenge, type InsertChallenge, 
   type ChallengeProgress, type InsertChallengeProgress,
   type Message, type InsertMessage,
-  type Achievement, type InsertAchievement,
   type Interest, type InsertInterest
 } from "@shared/schema";
 import { db } from "./db";
@@ -443,22 +442,7 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  // Achievement related methods
-  async createAchievement(achievementData: InsertAchievement): Promise<Achievement> {
-    const [achievement] = await db
-      .insert(achievements)
-      .values(achievementData)
-      .returning();
-    return achievement;
-  }
-
-  async getUserAchievements(userId: number): Promise<Achievement[]> {
-    return db
-      .select()
-      .from(achievements)
-      .where(eq(achievements.userId, userId))
-      .orderBy(desc(achievements.earnedAt));
-  }
+  // Achievement methods removed
 
   // Interest related methods
   async createInterest(interestData: InsertInterest): Promise<Interest> {

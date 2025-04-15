@@ -123,8 +123,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   sentMatches: many(matches, { relationName: "user1_matches" }),
   receivedMatches: many(matches, { relationName: "user2_matches" }),
   challengeProgresses: many(challengeProgresses),
-  messages: many(messages),
-  achievements: many(achievements)
+  messages: many(messages)
 }));
 
 export const matchesRelations = relations(matches, ({ one, many }) => ({
@@ -172,12 +171,7 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   })
 }));
 
-export const achievementsRelations = relations(achievements, ({ one }) => ({
-  user: one(users, {
-    fields: [achievements.userId],
-    references: [users.id]
-  })
-}));
+// Achievements relations removed
 
 // Export types
 export type User = typeof users.$inferSelect;
@@ -198,5 +192,4 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Interest = typeof interests.$inferSelect;
 export type InsertInterest = z.infer<typeof insertInterestSchema>;
 
-export type Achievement = typeof achievements.$inferSelect;
-export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
+// Achievement types removed

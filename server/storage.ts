@@ -9,8 +9,6 @@ import {
   InsertChallengeProgress,
   Message,
   InsertMessage,
-  Achievement,
-  InsertAchievement,
   Interest,
   InsertInterest
 } from "@shared/schema";
@@ -61,9 +59,7 @@ export interface IStorage {
   createMessage(message: InsertMessage): Promise<Message>;
   markMessagesAsRead(matchId: number, userId: number): Promise<void>;
   
-  // Achievement related methods
-  createAchievement(achievement: InsertAchievement): Promise<Achievement>;
-  getUserAchievements(userId: number): Promise<Achievement[]>;
+  // Achievement methods removed
   
   // Interest related methods
   createInterest(interest: InsertInterest): Promise<Interest>;
@@ -76,7 +72,7 @@ export class MemStorage implements IStorage {
   private challenges: Map<number, Challenge>;
   private challengeProgresses: Map<string, ChallengeProgress>;
   private messages: Map<number, Message>;
-  private achievements: Map<number, Achievement>;
+  // achievements removed
   private interests: Map<number, Interest>;
   
   userIdCounter: number;
