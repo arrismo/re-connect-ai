@@ -67,14 +67,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       console.log("Sending login request with:", credentials);
-      const res = await apiRequest("POST", "/api/login", credentials);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Authentication failed");
+      try {
+        // Use skipErrorCheck=true so we can handle the response manually
+        const res = await apiRequest("POST", "/api/login", credentials, true);
+        console.log("Login response status:", res.status);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.log("Login error response:", errorText);
+          
+          let errorMessage = "Authentication failed";
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If JSON parsing fails, use the error text as is
+            if (errorText) errorMessage = errorText;
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        const userData = await res.json();
+        console.log("Login successful, user data:", userData);
+        return userData;
+      } catch (err) {
+        console.error("Login mutation error:", err);
+        throw err;
       }
-      return await res.json();
     },
     onSuccess: (userData: User) => {
+      console.log("Login mutation success, setting user data:", userData);
       queryClient.setQueryData(["/api/user"], userData);
       toast({
         title: "Login successful",
@@ -82,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
+      console.error("Login mutation error handler:", error);
       toast({
         title: "Login failed",
         description: error.message || "Invalid credentials. Please try again.",

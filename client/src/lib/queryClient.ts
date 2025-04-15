@@ -11,15 +11,23 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  skipErrorCheck: boolean = false
 ): Promise<Response> {
+  console.log(`API Request: ${method} ${url}`, data);
+  
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
-
-  await throwIfResNotOk(res);
+  
+  console.log(`API Response: ${res.status} for ${method} ${url}`);
+  
+  if (!skipErrorCheck) {
+    await throwIfResNotOk(res);
+  }
+  
   return res;
 }
 
