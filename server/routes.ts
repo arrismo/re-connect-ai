@@ -759,22 +759,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Mark challenge as completed
         const completedChallenge = await storage.updateChallengeStatus(challengeId, "completed");
         
-        // Award achievements and points to both users
-        await storage.createAchievement({
-          userId,
-          type: "challenge",
-          title: "Challenge Completed",
-          description: `Completed "${challenge.title}" challenge`,
-          points: 100
-        });
+        // Award points to both users (achievements removed)
         
-        await storage.createAchievement({
-          userId: otherUserId,
-          type: "challenge",
-          title: "Challenge Completed",
-          description: `Completed "${challenge.title}" challenge`,
-          points: 100
-        });
+        // Achievement code removed
         
         // Add points to both users
         await storage.addUserPoints(userId, 100);
@@ -834,55 +821,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         daysSober
       );
       
-      // Check for achievements
-      let achievement = null;
-      
-      // Award achievements for milestones (7, 30, 90, 365 days)
+      // Achievements feature removed
+      // Award points based on progress milestones
       if (daysSober >= 7 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 1)) {
-        achievement = await storage.createAchievement({
-          userId,
-          type: "sobriety",
-          title: "One Week Sober",
-          description: "Maintained sobriety for 7 days",
-          points: 50
-        });
-        
         await storage.updateChallengeProgress(challengeId, userId, 1);
         await storage.addUserPoints(userId, 50);
       } 
       else if (daysSober >= 30 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 2)) {
-        achievement = await storage.createAchievement({
-          userId,
-          type: "sobriety",
-          title: "One Month Sober",
-          description: "Maintained sobriety for 30 days",
-          points: 100
-        });
-        
         await storage.updateChallengeProgress(challengeId, userId, 2);
         await storage.addUserPoints(userId, 100);
       }
       else if (daysSober >= 90 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 3)) {
-        achievement = await storage.createAchievement({
-          userId,
-          type: "sobriety",
-          title: "Three Months Sober",
-          description: "Maintained sobriety for 90 days",
-          points: 200
-        });
-        
         await storage.updateChallengeProgress(challengeId, userId, 3);
         await storage.addUserPoints(userId, 200);
       }
       else if (daysSober >= 365 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 4)) {
-        achievement = await storage.createAchievement({
-          userId,
-          type: "sobriety",
-          title: "One Year Sober",
-          description: "Maintained sobriety for 365 days",
-          points: 500
-        });
-        
         await storage.updateChallengeProgress(challengeId, userId, 4);
         await storage.addUserPoints(userId, 500);
         
@@ -965,42 +918,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Record check-in
       const updatedProgress = await storage.recordCheckIn(challengeId, userId);
       
-      // Check for streak achievements
-      let achievement = null;
+      // Achievements feature removed, just award points for streaks
       
       if (updatedProgress.currentStreak !== null && updatedProgress.currentStreak >= 7 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 1)) {
-        achievement = await storage.createAchievement({
-          userId,
-          type: "streak",
-          title: "7-Day Streak",
-          description: "Checked in for 7 consecutive days",
-          points: 50
-        });
-        
         await storage.updateChallengeProgress(challengeId, userId, 1);
         await storage.addUserPoints(userId, 50);
       }
       else if (updatedProgress.currentStreak !== null && updatedProgress.currentStreak >= 30 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 2)) {
-        achievement = await storage.createAchievement({
-          userId,
-          type: "streak",
-          title: "30-Day Streak",
-          description: "Checked in for 30 consecutive days",
-          points: 150
-        });
-        
         await storage.updateChallengeProgress(challengeId, userId, 2);
         await storage.addUserPoints(userId, 150);
       }
       else if (updatedProgress.currentStreak !== null && updatedProgress.currentStreak >= 100 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 3)) {
-        achievement = await storage.createAchievement({
-          userId,
-          type: "streak",
-          title: "100-Day Streak",
-          description: "Checked in for 100 consecutive days",
-          points: 300
-        });
-        
         await storage.updateChallengeProgress(challengeId, userId, 3);
         await storage.addUserPoints(userId, 300);
         
@@ -1187,18 +1115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // ================== ACHIEVEMENT ROUTES ==================
   
-  // Get user achievements
-  app.get("/api/achievements", ensureAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      
-      const achievements = await storage.getUserAchievements(userId);
-      
-      res.status(200).json({ achievements });
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
+  // Achievements feature removed
   
   // ================== INTEREST ROUTES ==================
   
