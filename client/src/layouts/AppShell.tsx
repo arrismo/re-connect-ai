@@ -19,7 +19,7 @@ interface AppShellProps {
 const navItems = [
   { icon: Home, label: "Dashboard", href: "/dashboard" },
   { icon: UsersRound, label: "Matches", href: "/matches" },
-  { icon: CheckSquare, label: "Challenges", href: "/challenges", badge: true },
+  { icon: CheckSquare, label: "Challenges", href: "/challenges", badge: false },
   { icon: MessageSquare, label: "Messages", href: "/messages" },
   { icon: Settings, label: "Settings", href: "/settings" }
 ];
