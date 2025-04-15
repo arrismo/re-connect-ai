@@ -134,8 +134,8 @@ async function generateWithGemini(
     
     // Try to parse the JSON response
     try {
-      // Extract JSON from the response if needed
-      const jsonMatch = text.match(/\[\s*\{.*\}\s*\]/s);
+      // Extract JSON from the response if needed - using non-s flag compatible regex
+      const jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
       const jsonText = jsonMatch ? jsonMatch[0] : text;
       
       // Parse the JSON

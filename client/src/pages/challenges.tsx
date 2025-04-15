@@ -200,17 +200,19 @@ export default function Challenges() {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <h3 className="font-medium text-lg mb-2">No active challenges</h3>
-            <p className="text-neutral-600 mb-4">Create a challenge with your match to keep each other accountable</p>
+            <h3 className="font-medium text-lg mb-2">No Active Recovery Challenges</h3>
+            <p className="text-neutral-600 mb-4">
+              Generate AI-powered recovery challenges to support your sobriety journey with your accountability partner.
+            </p>
             {activeMatches.length > 0 ? (
               <Button 
                 onClick={() => setCreateDialogOpen(true)}
                 className="bg-primary hover:bg-primary/90 text-white"
               >
-                Create Challenge
+                Generate Recovery Challenge
               </Button>
             ) : (
-              <p className="text-sm text-neutral-500">You need an active match to create challenges.</p>
+              <p className="text-sm text-neutral-500">You need an active match to generate recovery challenges.</p>
             )}
           </div>
         )}
@@ -220,7 +222,8 @@ export default function Challenges() {
       {completedChallenges.length > 0 && (
         <section className="mb-8">
           <div className="mb-4">
-            <h2 className="text-xl font-bold">Completed Challenges</h2>
+            <h2 className="text-xl font-bold">Completed Recovery Milestones</h2>
+            <p className="text-sm text-neutral-600">Celebrate your recovery achievements and progress</p>
           </div>
           
           <div className="space-y-4">
@@ -237,9 +240,9 @@ export default function Challenges() {
       
       {/* Create Challenge Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle>Create New Challenge</DialogTitle>
+            <DialogTitle>Generate AI Recovery Challenge</DialogTitle>
           </DialogHeader>
           <CreateChallengeForm 
             matches={activeMatches}
