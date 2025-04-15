@@ -15,10 +15,11 @@ import { motion, AnimatePresence } from "framer-motion";
 interface SuggestionBubbleProps {
   suggestion: Suggestion;
   onDismiss?: (id: string) => void;
+  onSelect?: (text: string) => void;
   className?: string;
 }
 
-export function SuggestionBubble({ suggestion, onDismiss, className }: SuggestionBubbleProps) {
+export function SuggestionBubble({ suggestion, onDismiss, onSelect, className }: SuggestionBubbleProps) {
   const [isHovered, setIsHovered] = useState(false);
   
   // Define icons based on suggestion type
@@ -65,6 +66,7 @@ export function SuggestionBubble({ suggestion, onDismiss, className }: Suggestio
           getBgColor(),
           className
         )}
+        onClick={() => onSelect && onSelect(suggestion.text)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

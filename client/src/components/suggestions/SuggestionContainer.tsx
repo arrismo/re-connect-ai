@@ -10,6 +10,7 @@ interface SuggestionContainerProps {
   max?: number; // max number of suggestions to show
   className?: string;
   autoFetch?: boolean; // whether to fetch suggestions automatically
+  onSelectSuggestion?: (text: string) => void; // callback when a suggestion is selected
 }
 
 export function SuggestionContainer({
@@ -17,7 +18,8 @@ export function SuggestionContainer({
   refreshInterval = 0,
   max = 3,
   className = "",
-  autoFetch = true
+  autoFetch = true,
+  onSelectSuggestion
 }: SuggestionContainerProps) {
   const { 
     getSuggestionsAsync,
@@ -126,6 +128,7 @@ export function SuggestionContainer({
                 key={suggestion.id}
                 suggestion={suggestion}
                 onDismiss={handleDismiss}
+                onSelect={onSelectSuggestion}
               />
             ))}
           </motion.div>
