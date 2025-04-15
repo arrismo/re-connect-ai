@@ -202,17 +202,17 @@ export default function Challenges() {
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
             <h3 className="font-medium text-lg mb-2">No Active Recovery Challenges</h3>
             <p className="text-neutral-600 mb-4">
-              Generate AI-powered recovery challenges to support your sobriety journey with your accountability partner.
+              Select from our curated set of recovery challenges to support your sobriety journey with your accountability partner.
             </p>
             {activeMatches.length > 0 ? (
               <Button 
                 onClick={() => setCreateDialogOpen(true)}
                 className="bg-primary hover:bg-primary/90 text-white"
               >
-                Generate Recovery Challenge
+                Select Recovery Challenge
               </Button>
             ) : (
-              <p className="text-sm text-neutral-500">You need an active match to generate recovery challenges.</p>
+              <p className="text-sm text-neutral-500">You need an active match to create recovery challenges.</p>
             )}
           </div>
         )}
@@ -242,7 +242,7 @@ export default function Challenges() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle>Generate AI Recovery Challenge</DialogTitle>
+            <DialogTitle>Select Recovery Challenge</DialogTitle>
           </DialogHeader>
           <CreateChallengeForm 
             matches={activeMatches}
