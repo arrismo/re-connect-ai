@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import StatsCard from "@/components/shared/StatsCard";
 import MatchCard from "@/components/match/MatchCard";
 import ChallengeCard from "@/components/challenge/ChallengeCard";
+import ResearchSection from "@/components/research/ResearchSection";
 import { UsersRound, CheckSquare } from "lucide-react";
 
 export default function Dashboard() {
@@ -132,6 +133,9 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+      
+      {/* Recovery Research Section */}
+      <ResearchSection />
       
       {/* Achievements section removed */}
     </div>
