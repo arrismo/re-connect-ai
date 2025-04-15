@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Send, Calendar, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { SuggestionContainer } from "@/components/suggestions/SuggestionContainer";
 
 interface ChatInterfaceProps {
   matchId: number;

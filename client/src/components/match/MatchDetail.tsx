@@ -7,6 +7,7 @@ import { Link } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { SuggestionContainer } from "@/components/suggestions/SuggestionContainer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -227,6 +228,27 @@ export default function MatchDetail({ match, onClose }: MatchDetailProps) {
           
           {/* Right Column - Details */}
           <div className="md:w-2/3">
+            {/* AI Suggestions */}
+            <div className="mb-6">
+              <SuggestionContainer 
+                context={{ 
+                  contextType: 'match',
+                  matchId: match.id,
+                  additionalContext: {
+                    matchScore,
+                    goalAlignment,
+                    experienceComplementary,
+                    scheduleCompatibility,
+                    userGoals,
+                    userExperiences,
+                    completedChallengesCount: completedChallenges.length
+                  }
+                }}
+                max={2}
+                className="mb-4"
+              />
+            </div>
+            
             {/* Match Goals */}
             <div className="mb-6">
               <h4 className="font-semibold mb-3">Goals & Experiences</h4>

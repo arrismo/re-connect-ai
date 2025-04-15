@@ -5,6 +5,7 @@ import StatsCard from "@/components/shared/StatsCard";
 import MatchCard from "@/components/match/MatchCard";
 import ChallengeCard from "@/components/challenge/ChallengeCard";
 import { UsersRound, CheckSquare } from "lucide-react";
+import { SuggestionContainer } from "@/components/suggestions/SuggestionContainer";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -38,7 +39,26 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-6xl">
-      <h1 className="text-2xl font-bold mb-6">Welcome, {user?.displayName || user?.username}</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <h1 className="text-2xl font-bold">Welcome, {user?.displayName || user?.username}</h1>
+        
+        {/* AI Suggestions for Dashboard */}
+        <div className="mt-4 md:mt-0 w-full md:w-1/3">
+          <SuggestionContainer 
+            context={{ 
+              contextType: 'dashboard',
+              additionalContext: {
+                activeMatchesCount: activeMatches.length,
+                activeChallengesCount: activeChallenges.length,
+                completedChallengesCount: challengesData?.challenges?.filter((c: any) => c.status === 'completed').length || 0,
+                userPoints: user?.points || 0
+              }
+            }}
+            refreshInterval={300000} // Refresh every 5 minutes
+            className="mb-4"
+          />
+        </div>
+      </div>
       
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
