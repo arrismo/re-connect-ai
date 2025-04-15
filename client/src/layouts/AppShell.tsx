@@ -1,16 +1,20 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useResearchSidebar } from "@/hooks/useResearchSidebar";
 import { 
   Home,
   UsersRound,
   CheckSquare,
   MessageSquare,
   Settings,
-  Menu
+  Menu,
+  BookOpen
 } from "lucide-react";
 import { useState } from "react";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
+import ResearchSidebar from "@/components/research/ResearchSidebar";
 import { Sidebar } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -27,6 +31,7 @@ const navItems = [
 export default function AppShell({ children }: AppShellProps) {
   const [location] = useLocation();
   const { user } = useAuth();
+  const { isOpen, openSidebar, closeSidebar } = useResearchSidebar();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
@@ -35,6 +40,9 @@ export default function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* Research Sidebar */}
+      {isOpen && <ResearchSidebar onClose={closeSidebar} />}
+      
       <Sidebar
         className={`w-20 md:w-64 bg-white shadow-md flex-shrink-0 ${mobileMenuOpen ? 'flex' : 'hidden md:flex'} flex-col transition-all duration-300`}
       >
@@ -102,6 +110,23 @@ export default function AppShell({ children }: AppShellProps) {
               {location.substring(1) || "Dashboard"}
             </h2>
             <div className="flex items-center gap-4">
+              <Button 
+                variant="outline"
+                size="sm"
+                className="hidden md:flex gap-2 items-center"
+                onClick={openSidebar}
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>Research</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="md:hidden"
+                onClick={openSidebar}
+              >
+                <BookOpen className="h-4 w-4" />
+              </Button>
               <NotificationDropdown />
               <div className="md:hidden w-8 h-8 bg-neutral-200 rounded-full overflow-hidden">
                 {user?.profilePic ? (

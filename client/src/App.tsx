@@ -14,6 +14,7 @@ import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationProvider } from "@/hooks/useNotifications";
+import { ResearchSidebarProvider } from "@/hooks/useResearchSidebar";
 import { ProtectedRoute, PublicOnlyRoute } from "@/lib/protected-route";
 
 function Router() {
@@ -73,8 +74,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NotificationProvider>
-          <Router />
-          <Toaster />
+          <ResearchSidebarProvider>
+            <Router />
+            <Toaster />
+          </ResearchSidebarProvider>
         </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
