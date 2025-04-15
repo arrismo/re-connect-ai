@@ -1104,6 +1104,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ================== RESEARCH ROUTES ==================
+  
+  // Get research information on specific topics (no authentication required)
+  app.get("/api/research", async (req: Request, res: Response) => {
+    try {
+      const { topic, query } = z.object({
+        topic: z.string(),
+        query: z.string().optional()
+      }).parse(req.query as any);
+      
+      const researchItems = await researchService.getResearch({
+        topic,
+        query,
+        maxResults: 5
+      });
+      
+      res.status(200).json({ researchItems });
+    } catch (error: any) {
+      console.error("Error fetching research:", error);
+      res.status(400).json({ 
+        message: error.message || "Failed to fetch research information",
+        researchItems: [] 
+      });
+    }
+  });
+  
   // ================== SUGGESTION ROUTES ==================
   
   // Get contextual suggestions based on the current state
@@ -1338,33 +1364,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // We'll modify the original match request endpoint directly in its definition
-  
-  // ================== RESEARCH ROUTES ==================
-  
-  // Get research content
-  app.get("/api/research", ensureAuthenticated, async (req: any, res) => {
-    try {
-      const { topic, query } = z.object({
-        topic: z.string(),
-        query: z.string().optional()
-      }).parse(req.query);
-      
-      // Get research content from Gemini API
-      const researchItems = await researchService.getResearch({
-        topic,
-        query,
-        maxResults: 5
-      });
-      
-      res.status(200).json({ researchItems });
-    } catch (error: any) {
-      console.error("Error getting research content:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch research content",
-        error: error.message 
-      });
-    }
-  });
   
   // Add error handler
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {

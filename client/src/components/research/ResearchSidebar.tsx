@@ -35,7 +35,7 @@ export default function ResearchSidebar({ isOpen, onClose }: ResearchSidebarProp
     data: aaData, 
     isLoading: aaLoading,
     refetch: refetchAA 
-  } = useQuery({
+  } = useQuery<ResearchResponse>({
     queryKey: ['/api/research', 'alcoholics anonymous', searchQuery],
     queryFn: () => fetch(`/api/research?topic=alcoholics anonymous${searchQuery ? `&query=${encodeURIComponent(searchQuery)}` : ''}`).then(res => res.json()),
     enabled: isOpen && activeTab === "aa",
@@ -46,7 +46,7 @@ export default function ResearchSidebar({ isOpen, onClose }: ResearchSidebarProp
     data: partnerData, 
     isLoading: partnerLoading,
     refetch: refetchPartners 
-  } = useQuery({
+  } = useQuery<ResearchResponse>({
     queryKey: ['/api/research', 'accountability partners', searchQuery],
     queryFn: () => fetch(`/api/research?topic=accountability partners${searchQuery ? `&query=${encodeURIComponent(searchQuery)}` : ''}`).then(res => res.json()),
     enabled: isOpen && activeTab === "partners",
@@ -140,7 +140,7 @@ export default function ResearchSidebar({ isOpen, onClose }: ResearchSidebarProp
               </div>
             ) : partnerData?.researchItems && partnerData.researchItems.length > 0 ? (
               <div className="space-y-4">
-                {partnerData.researchItems.map((item, index) => (
+                {partnerData.researchItems.map((item: ResearchItem, index: number) => (
                   <ResearchItem
                     key={`partner-research-${index}`}
                     title={item.title}
