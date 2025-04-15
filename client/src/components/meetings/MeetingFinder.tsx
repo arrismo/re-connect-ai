@@ -62,13 +62,14 @@ const MeetingFinder: React.FC<MeetingFinderProps> = ({ onSelectMeeting }) => {
 
   // Fetch meetings
   const { data: meetingsData, isLoading } = useQuery({
-    queryKey: ['/api/meetings', userLocation?.lat, userLocation?.lng, searchRadius, meetingType],
+    queryKey: [userLocation ? '/api/meetings/nearby' : '/api/meetings', userLocation?.lat, userLocation?.lng, searchRadius, meetingType],
     queryFn: async () => {
       let url = '/api/meetings';
       
       // Add location-based search if we have user location
       if (userLocation) {
-        url += `?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=${searchRadius}`;
+        url = '/api/meetings/nearby';
+        url += `?latitude=${userLocation.lat}&longitude=${userLocation.lng}&radius=${searchRadius}`;
         
         if (meetingType !== 'all') {
           url += `&type=${meetingType}`;

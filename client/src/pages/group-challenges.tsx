@@ -2,16 +2,39 @@ import React from 'react';
 import { 
   Card, 
   CardContent, 
-  CardDescription, 
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, Trophy, Target } from 'lucide-react';
+import { Plus, Users, Trophy, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import GroupChallenges from '@/components/challenges/GroupChallenges';
 
-// This is a placeholder component until we implement the full group challenges feature
 const GroupChallengePage: React.FC = () => {
+  const [activeTab, setActiveTab] = React.useState('active');
+
+  // Fetch active group challenges
+  const { data: activeChallenges, isLoading: isLoadingActive } = useQuery({
+    queryKey: ['/api/group-challenges', 'active'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/group-challenges');
+      return await res.json();
+    },
+    enabled: activeTab === 'active'
+  });
+
+  // Fetch user's group challenges
+  const { data: userChallenges, isLoading: isLoadingUserChallenges } = useQuery({
+    queryKey: ['/api/my-group-challenges'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/my-group-challenges');
+      return await res.json();
+    },
+    enabled: activeTab === 'my'
+  });
+
   return (
     <div className="container px-4 py-6 max-w-7xl mx-auto">
       <div className="mb-8">
@@ -29,7 +52,7 @@ const GroupChallengePage: React.FC = () => {
         </div>
       </div>
       
-      <Tabs defaultValue="active">
+      <Tabs defaultValue="active" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4 mb-8">
           <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="my">My Challenges</TabsTrigger>
@@ -38,43 +61,41 @@ const GroupChallengePage: React.FC = () => {
         </TabsList>
         
         <TabsContent value="active" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Placeholder cards for active challenges */}
-            <ChallengeCard 
-              title="30 Days of Sobriety" 
-              participants={12} 
-              progress={40} 
-              daysLeft={18} 
-              type="daily_check_in"
-            />
-            <ChallengeCard 
-              title="Mindfulness Meditation" 
-              participants={8} 
-              progress={60} 
-              daysLeft={12} 
-              type="activity_tracking"
-            />
-            <ChallengeCard 
-              title="Step Work Group" 
-              participants={15} 
-              progress={25} 
-              daysLeft={21} 
-              type="milestone"
-            />
-          </div>
+          {isLoadingActive ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : activeChallenges?.challenges && activeChallenges.challenges.length > 0 ? (
+            <GroupChallenges challenges={activeChallenges.challenges} />
+          ) : (
+            <div className="text-center py-12">
+              <h3 className="text-xl font-medium mb-2">No active challenges found</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                There are currently no active group challenges. Check back soon or create your own!
+              </p>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="my">
-          <div className="text-center py-12">
-            <div className="mb-4">
-              <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+          {isLoadingUserChallenges ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <h3 className="text-xl font-medium mb-2">You haven't joined any challenges yet</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Join a group challenge to track progress together with others in recovery
-            </p>
-            <Button>Browse Challenges</Button>
-          </div>
+          ) : userChallenges?.challenges && userChallenges.challenges.length > 0 ? (
+            <GroupChallenges challenges={userChallenges.challenges} />
+          ) : (
+            <div className="text-center py-12">
+              <div className="mb-4">
+                <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-medium mb-2">You haven't joined any challenges yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Join a group challenge to track progress together with others in recovery
+              </p>
+              <Button onClick={() => setActiveTab('discover')}>Browse Challenges</Button>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="completed">
@@ -90,104 +111,16 @@ const GroupChallengePage: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="discover">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Placeholder cards for discoverable challenges */}
-            <ChallengeCard 
-              title="Gratitude Journal" 
-              participants={24} 
-              progress={0} 
-              daysLeft={30} 
-              type="daily_check_in"
-              isJoinable={true}
-            />
-            <ChallengeCard 
-              title="Exercise Challenge" 
-              participants={16} 
-              progress={0} 
-              daysLeft={14} 
-              type="activity_tracking"
-              isJoinable={true}
-            />
-            <ChallengeCard 
-              title="Reading Circle" 
-              participants={9} 
-              progress={0} 
-              daysLeft={28} 
-              type="milestone"
-              isJoinable={true}
-            />
+          <div className="text-center py-12">
+            <h3 className="text-xl font-medium mb-2">Discover challenges</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Browse and join upcoming group challenges to improve your recovery journey with others
+            </p>
+            <Button onClick={() => setActiveTab('active')}>See Active Challenges</Button>
           </div>
         </TabsContent>
       </Tabs>
     </div>
-  );
-};
-
-// Challenge Card Component
-interface ChallengeCardProps {
-  title: string;
-  participants: number;
-  progress: number;
-  daysLeft: number;
-  type: 'daily_check_in' | 'activity_tracking' | 'milestone';
-  isJoinable?: boolean;
-}
-
-const ChallengeCard: React.FC<ChallengeCardProps> = ({ 
-  title, 
-  participants, 
-  progress, 
-  daysLeft, 
-  type,
-  isJoinable = false
-}) => {
-  return (
-    <Card className={`overflow-hidden ${isJoinable ? 'border-dashed' : ''}`}>
-      <div className="h-2 bg-primary" />
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{title}</CardTitle>
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-            <Users className="mr-1 h-3 w-3" />
-            {participants}
-          </span>
-        </div>
-        <CardDescription>
-          {type === 'daily_check_in' && 'Daily Check-in'}
-          {type === 'activity_tracking' && 'Activity Tracking'}
-          {type === 'milestone' && 'Milestone Achievement'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <div className="flex justify-between items-center mb-1 text-sm">
-              <span>Progress</span>
-              <span className="font-medium">{progress}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-secondary overflow-hidden">
-              <div 
-                className="h-full bg-primary" 
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-          
-          <div className="flex justify-between text-sm">
-            <div className="flex items-center">
-              <Target className="h-4 w-4 mr-1 text-muted-foreground" />
-              <span>{daysLeft} days left</span>
-            </div>
-            
-            {isJoinable ? (
-              <Button size="sm" variant="outline">Join</Button>
-            ) : (
-              <Button size="sm" variant="outline">View</Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 };
 
