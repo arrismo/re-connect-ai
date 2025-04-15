@@ -78,16 +78,22 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize suggestion service with Gemini API key
+  // Initialize services with Gemini API key
   if (process.env.GEMINI_API_KEY) {
     try {
       console.log("GEMINI_API_KEY is set and valid");
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      
+      // Initialize suggestion service
       await suggestionService.initialize(process.env.GEMINI_API_KEY);
+      
+      // Initialize research service
+      researchService.initialize(genAI);
     } catch (error) {
-      console.error("Failed to initialize suggestion service with Gemini API:", error);
+      console.error("Failed to initialize AI services with Gemini API:", error);
     }
   } else {
-    console.warn("GEMINI_API_KEY is not set, suggestion service will not be available");
+    console.warn("GEMINI_API_KEY is not set, AI-powered services will not be available");
   }
 
   const server = await registerRoutes(app);

@@ -15,7 +15,7 @@ interface ResearchItem {
 class ResearchService {
   private model: GenerativeModel | null = null;
 
-  initialize(genAI: GoogleGenerativeAI) {
+  initialize(genAI: GoogleGenerativeAI): boolean {
     try {
       this.model = genAI.getGenerativeModel({ 
         model: "gemini-1.5-pro",
@@ -50,13 +50,13 @@ class ResearchService {
       // Parse the response into the expected format
       return this.parseResearchItems(text, maxResults);
     } catch (error) {
-      console.error(\`Error generating research for \${topic}:\`, error);
+      console.error(`Error generating research for ${topic}:`, error);
       return this.getFallbackResearch(topic);
     }
   }
 
   private buildResearchPrompt(topic: string, query: string): string {
-    let basePrompt = \`Generate ${
+    return `Generate ${
       query ? 'specific information about "' + query + '" related to' : ''
     } peer-reviewed research on ${topic} for alcohol addiction recovery. 
 
@@ -72,10 +72,7 @@ SOURCE: [journal name (year)]
 
 Focus on factual, evidence-based information from peer-reviewed sources. Emphasize practical applications that can help individuals in recovery. Include specific statistics and research findings when available.
 
-Generate 5 distinct research items.
-\`;
-
-    return basePrompt;
+Generate 5 distinct research items.`;
   }
 
   private parseResearchItems(text: string, maxResults: number): ResearchItem[] {
