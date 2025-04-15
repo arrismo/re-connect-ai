@@ -21,11 +21,7 @@ export default function Dashboard() {
     retry: 1,
   });
   
-  // Get achievements
-  const { data: achievementsData, isLoading: achievementsLoading } = useQuery({
-    queryKey: ['/api/achievements'],
-    retry: 1,
-  });
+  // Achievements feature removed
   
   // Active challenges only
   const activeChallenges = challengesData?.challenges?.filter(
@@ -37,8 +33,8 @@ export default function Dashboard() {
     .filter((match: any) => match.status === 'active')
     .slice(0, 2);
   
-  // Recent achievements - max 3
-  const recentAchievements = (achievementsData?.achievements || []).slice(0, 3);
+  // Achievements feature removed
+  const recentAchievements = [];
 
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-6xl">
