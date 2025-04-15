@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, BookOpen, ArrowRightCircle, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,16 @@ import {
   CollapsibleContent, 
   CollapsibleTrigger 
 } from "@/components/ui/collapsible";
+
+interface ResearchItem {
+  title: string;
+  content: string;
+  source: string;
+}
+
+interface ResearchResponse {
+  researchItems: ResearchItem[];
+}
 
 interface ResearchSidebarProps {
   isOpen: boolean;
@@ -23,24 +33,33 @@ export default function ResearchSidebar({ isOpen, onClose }: ResearchSidebarProp
   // Fetch AA research
   const { 
     data: aaData, 
-    isLoading: aaLoading 
+    isLoading: aaLoading,
+    refetch: refetchAA 
   } = useQuery({
-    queryKey: ['/api/research/alcoholics-anonymous', searchQuery],
+    queryKey: ['/api/research', 'alcoholics anonymous', searchQuery],
+    queryFn: () => fetch(`/api/research?topic=alcoholics anonymous${searchQuery ? `&query=${encodeURIComponent(searchQuery)}` : ''}`).then(res => res.json()),
     enabled: isOpen && activeTab === "aa",
   });
   
   // Fetch accountability partner research
   const { 
     data: partnerData, 
-    isLoading: partnerLoading 
+    isLoading: partnerLoading,
+    refetch: refetchPartners 
   } = useQuery({
-    queryKey: ['/api/research/accountability-partners', searchQuery],
+    queryKey: ['/api/research', 'accountability partners', searchQuery],
+    queryFn: () => fetch(`/api/research?topic=accountability partners${searchQuery ? `&query=${encodeURIComponent(searchQuery)}` : ''}`).then(res => res.json()),
     enabled: isOpen && activeTab === "partners",
   });
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // Trigger a refetch with the new search query
+    if (activeTab === "aa") {
+      refetchAA();
+    } else if (activeTab === "partners") {
+      refetchPartners();
+    }
   };
   
   // If the sidebar is not open, don't render anything
@@ -84,6 +103,17 @@ export default function ResearchSidebar({ isOpen, onClose }: ResearchSidebarProp
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
+            ) : aaData?.researchItems && aaData.researchItems.length > 0 ? (
+              <div className="space-y-4">
+                {aaData.researchItems.map((item: ResearchItem, index: number) => (
+                  <ResearchItem
+                    key={`aa-research-${index}`}
+                    title={item.title}
+                    content={item.content}
+                    source={item.source}
+                  />
+                ))}
+              </div>
             ) : (
               <div className="space-y-4">
                 <ResearchItem
@@ -97,24 +127,6 @@ export default function ResearchSidebar({ isOpen, onClose }: ResearchSidebarProp
                   content="Multiple peer-reviewed studies, including a 2020 Cochrane review, found that AA participation leads to higher rates of abstinence compared to other treatments. The review of 27 studies with 10,565 participants showed that AA and Twelve-Step Facilitation (TSF) interventions significantly increased abstinence rates and reduced alcohol-related consequences."
                   source="Cochrane Database of Systematic Reviews (2020)"
                 />
-                
-                <ResearchItem
-                  title="Social Support in AA"
-                  content="Research demonstrates that the social support network provided by AA is a key mechanism of change. Regular AA attendance helps maintain sobriety through increased sober social connections, enhanced self-efficacy, and reduced depression symptoms. The peer support model creates accountability and reduces feelings of isolation."
-                  source="Journal of Consulting and Clinical Psychology (2019)"
-                />
-                
-                <ResearchItem
-                  title="Long-term Benefits of AA"
-                  content="Longitudinal studies show that continuous involvement in AA is associated with sustained sobriety. A 16-year follow-up study found that individuals who remained active in AA had significantly better outcomes than those who discontinued participation. The fellowship structure promotes ongoing recovery maintenance behaviors."
-                  source="Alcoholism: Clinical and Experimental Research (2021)"
-                />
-                
-                <ResearchItem
-                  title="Spiritual Components of AA"
-                  content="The spiritual aspects of AA have been studied for their therapeutic benefits. Research indicates that spiritual growth experiences during AA participation correlate with improved outcomes. These components help individuals develop meaning, purpose, and transcendence beyond addiction, though AA emphasizes that members can interpret spirituality according to their own beliefs."
-                  source="Journal of Addiction Medicine (2017)"
-                />
               </div>
             )}
           </ScrollArea>
@@ -125,6 +137,17 @@ export default function ResearchSidebar({ isOpen, onClose }: ResearchSidebarProp
             {partnerLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : partnerData?.researchItems && partnerData.researchItems.length > 0 ? (
+              <div className="space-y-4">
+                {partnerData.researchItems.map((item, index) => (
+                  <ResearchItem
+                    key={`partner-research-${index}`}
+                    title={item.title}
+                    content={item.content}
+                    source={item.source}
+                  />
+                ))}
               </div>
             ) : (
               <div className="space-y-4">
@@ -138,24 +161,6 @@ export default function ResearchSidebar({ isOpen, onClose }: ResearchSidebarProp
                   title="Mechanisms of Effective Accountability"
                   content="Research identifies four key mechanisms that make accountability partnerships effective: (1) regular self-disclosure that builds honesty, (2) consistent monitoring that reinforces sobriety-supporting behaviors, (3) positive peer pressure that encourages healthy choices, and (4) reciprocal support that creates mutual investment in recovery outcomes."
                   source="Addiction Science & Clinical Practice (2020)"
-                />
-                
-                <ResearchItem
-                  title="Digital vs. In-Person Accountability"
-                  content="Emerging research on technology-mediated accountability shows promising results. While traditional in-person partnerships remain valuable, studies demonstrate that digital accountability partnerships can be similarly effective when they include regular structured communication, clear expectations, and real-time support options. The accessibility of digital tools increases engagement for many participants."
-                  source="Journal of Medical Internet Research (2022)"
-                />
-                
-                <ResearchItem
-                  title="Partner Matching Considerations"
-                  content="Research indicates that the most successful accountability partnerships share certain characteristics: comparable recovery stages, complementary communication styles, similar recovery goals, and sufficient differences in experience to provide diverse perspectives. Studies show that partnerships with these elements report higher satisfaction and longer maintenance of the relationship."
-                  source="Alcohol and Alcoholism (2019)"
-                />
-                
-                <ResearchItem
-                  title="Structured Activities in Partnerships"
-                  content="Studies demonstrate that incorporating structured activities into accountability partnerships enhances their effectiveness. Research-supported activities include joint goal-setting sessions, shared mindfulness practices, collaborative trigger identification, and regular progress reviews. These structured elements provide measurable outcomes and clear expectations for both partners."
-                  source="Journal of Consulting and Clinical Psychology (2021)"
                 />
               </div>
             )}

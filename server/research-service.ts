@@ -86,17 +86,27 @@ Generate 5 distinct research items.`;
       const section = sections[i].trim();
       
       try {
-        // Extract title (everything until CONTENT:)
-        const titleMatch = section.match(/^(.*?)(?=CONTENT:|$)/s);
-        const title = titleMatch ? titleMatch[1].trim() : "Unknown Research Finding";
+        // Use simpler string operations instead of complex regex
+        let title = "Unknown Research Finding";
+        let content = "No content available.";
+        let source = "Unknown Source";
         
-        // Extract content (between CONTENT: and SOURCE:)
-        const contentMatch = section.match(/CONTENT:\s*(.*?)(?=SOURCE:|$)/s);
-        const content = contentMatch ? contentMatch[1].trim() : "No content available.";
-        
-        // Extract source (everything after SOURCE:)
-        const sourceMatch = section.match(/SOURCE:\s*(.*?)(?=$)/s);
-        const source = sourceMatch ? sourceMatch[1].trim() : "Unknown Source";
+        // Find CONTENT: marker
+        const contentIndex = section.indexOf("CONTENT:");
+        if (contentIndex > -1) {
+          title = section.substring(0, contentIndex).trim();
+          
+          // Find SOURCE: marker after CONTENT:
+          const sourceIndex = section.indexOf("SOURCE:", contentIndex);
+          if (sourceIndex > -1) {
+            content = section.substring(contentIndex + 8, sourceIndex).trim();
+            source = section.substring(sourceIndex + 7).trim();
+          } else {
+            content = section.substring(contentIndex + 8).trim();
+          }
+        } else {
+          title = section;
+        }
         
         items.push({ title, content, source });
       } catch (error) {
