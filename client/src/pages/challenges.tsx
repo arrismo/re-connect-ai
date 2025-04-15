@@ -168,23 +168,6 @@ export default function Challenges() {
               Curated recovery challenges to help you and your accountability partner maintain sobriety and track your progress.
             </p>
           </div>
-          
-          {/* Challenge Suggestions */}
-          <div className="w-full md:w-1/3">
-            <SuggestionContainer 
-              context={{ 
-                contextType: 'challenge',
-                additionalContext: {
-                  activeChallengesCount: activeChallenges.length,
-                  completedChallengesCount: completedChallenges.length,
-                  activeMatchesCount: activeMatches.length,
-                  challengeTypes: activeChallenges.map((c: any) => c.challengeType)
-                }
-              }}
-              max={2}
-              refreshInterval={300000} // 5 minutes
-            />
-          </div>
         </div>
       </div>
       

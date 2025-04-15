@@ -228,26 +228,6 @@ export default function MatchDetail({ match, onClose }: MatchDetailProps) {
           
           {/* Right Column - Details */}
           <div className="md:w-2/3">
-            {/* AI Suggestions */}
-            <div className="mb-6">
-              <SuggestionContainer 
-                context={{ 
-                  contextType: 'match',
-                  matchId: match.id,
-                  additionalContext: {
-                    matchScore,
-                    goalAlignment,
-                    experienceComplementary,
-                    scheduleCompatibility,
-                    userGoals,
-                    userExperiences,
-                    completedChallengesCount: completedChallenges.length
-                  }
-                }}
-                max={2}
-                className="mb-4"
-              />
-            </div>
             
             {/* Match Goals */}
             <div className="mb-6">
