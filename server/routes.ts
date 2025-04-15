@@ -13,9 +13,17 @@ import {
   insertMessageSchema,
   // Achievement import removed
   insertInterestSchema,
+  insertMeetingSchema,
+  insertMeetingAttendeeSchema,
+  insertGroupChallengeSchema,
+  insertGroupChallengeParticipantSchema,
   User,
   Match,
-  InsertChallengeProgress
+  InsertChallengeProgress,
+  Meeting,
+  MeetingAttendee,
+  GroupChallenge,
+  GroupChallengeParticipant
 } from "@shared/schema";
 import { MatchRecommendation } from "./ai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -1104,6 +1112,405 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ================== MEETING ROUTES ==================
+
+  // Get all meetings
+  app.get("/api/meetings", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset) : undefined;
+      
+      const meetings = await storage.getAllMeetings(limit, offset);
+      res.status(200).json({ meetings });
+    } catch (error: any) {
+      logError("Error getting meetings", error, req);
+      res.status(500).json({ message: "Error fetching meetings" });
+    }
+  });
+
+  // Get meetings by location
+  app.get("/api/meetings/nearby", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const { latitude, longitude, radius } = z.object({
+        latitude: z.coerce.number(),
+        longitude: z.coerce.number(),
+        radius: z.coerce.number().default(10) // Default 10km radius
+      }).parse(req.query);
+      
+      const meetings = await storage.getMeetingsByLocation(latitude, longitude, radius);
+      res.status(200).json({ meetings });
+    } catch (error: any) {
+      logError("Error getting nearby meetings", error, req);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Get a single meeting
+  app.get("/api/meetings/:id", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const meetingId = parseInt(req.params.id);
+      const meeting = await storage.getMeeting(meetingId);
+      
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+      
+      // Get the attendees for this meeting
+      const attendees = await storage.getMeetingAttendees(meetingId);
+      
+      // Get user's attendance status if they're attending
+      const userAttendance = attendees.find(a => a.userId === req.user.id);
+      
+      res.status(200).json({ 
+        meeting,
+        isAttending: !!userAttendance,
+        attendanceStatus: userAttendance?.status || null,
+        checkedIn: userAttendance?.checkedIn || false,
+        attendeeCount: attendees.length
+      });
+    } catch (error: any) {
+      logError("Error getting meeting details", error, req);
+      res.status(500).json({ message: "Error fetching meeting details" });
+    }
+  });
+
+  // Create a new meeting
+  app.post("/api/meetings", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const meetingData = insertMeetingSchema.parse({
+        ...req.body,
+        createdBy: req.user.id
+      });
+      
+      const meeting = await storage.createMeeting(meetingData);
+      res.status(201).json({ meeting });
+    } catch (error: any) {
+      logError("Error creating meeting", error, req);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Update a meeting
+  app.put("/api/meetings/:id", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const meetingId = parseInt(req.params.id);
+      const meeting = await storage.getMeeting(meetingId);
+      
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+      
+      // Check if user created the meeting
+      if (meeting.createdBy !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to update this meeting" });
+      }
+      
+      const updateData = z.object({
+        name: z.string().optional(),
+        description: z.string().optional(),
+        meetingType: z.string().optional(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        zipCode: z.string().optional(),
+        country: z.string().optional(),
+        latitude: z.number().optional(),
+        longitude: z.number().optional(),
+        dayOfWeek: z.number().optional(),
+        startTime: z.string().optional(),
+        endTime: z.string().optional(),
+        isRecurring: z.boolean().optional(),
+        frequency: z.string().optional(),
+        contactPhone: z.string().optional(),
+        contactEmail: z.string().optional(),
+        website: z.string().optional(),
+      }).parse(req.body);
+      
+      const updatedMeeting = await storage.updateMeeting(meetingId, updateData);
+      res.status(200).json({ meeting: updatedMeeting });
+    } catch (error: any) {
+      logError("Error updating meeting", error, req);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Delete a meeting
+  app.delete("/api/meetings/:id", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const meetingId = parseInt(req.params.id);
+      const meeting = await storage.getMeeting(meetingId);
+      
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+      
+      // Check if user created the meeting
+      if (meeting.createdBy !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to delete this meeting" });
+      }
+      
+      const success = await storage.deleteMeeting(meetingId);
+      
+      if (success) {
+        res.status(200).json({ message: "Meeting deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete meeting" });
+      }
+    } catch (error: any) {
+      logError("Error deleting meeting", error, req);
+      res.status(500).json({ message: "Error deleting meeting" });
+    }
+  });
+
+  // ================== MEETING ATTENDANCE ROUTES ==================
+
+  // Get user's meeting attendance
+  app.get("/api/my-meetings", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const attendances = await storage.getUserMeetingAttendance(userId);
+      
+      // Get the full meeting details for each attendance
+      const meetingsWithDetails = await Promise.all(
+        attendances.map(async (attendance) => {
+          const meeting = await storage.getMeeting(attendance.meetingId);
+          return {
+            ...attendance,
+            meeting
+          };
+        })
+      );
+      
+      res.status(200).json({ meetings: meetingsWithDetails });
+    } catch (error: any) {
+      logError("Error getting user meetings", error, req);
+      res.status(500).json({ message: "Error fetching your meetings" });
+    }
+  });
+
+  // Attend or update attendance status for a meeting
+  app.post("/api/meetings/:id/attend", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const meetingId = parseInt(req.params.id);
+      const { status, reminderSet, notes } = z.object({
+        status: z.enum(["going", "interested", "not_going"]).default("going"),
+        reminderSet: z.boolean().optional(),
+        notes: z.string().optional()
+      }).parse(req.body);
+      
+      // Check if meeting exists
+      const meeting = await storage.getMeeting(meetingId);
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+      
+      const attendance = await storage.attendMeeting({
+        meetingId,
+        userId: req.user.id,
+        status,
+        reminderSet,
+        notes
+      });
+      
+      res.status(200).json({ attendance });
+    } catch (error: any) {
+      logError("Error attending meeting", error, req);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Check in to a meeting
+  app.post("/api/meetings/:id/check-in", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const meetingId = parseInt(req.params.id);
+      
+      // Check if meeting exists
+      const meeting = await storage.getMeeting(meetingId);
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+      
+      const attendance = await storage.checkInToMeeting(meetingId, req.user.id);
+      
+      // Award points for checking in
+      await storage.addUserPoints(req.user.id, 5);
+      
+      res.status(200).json({ 
+        attendance,
+        message: "Successfully checked in! You earned 5 points."
+      });
+    } catch (error: any) {
+      logError("Error checking in to meeting", error, req);
+      res.status(500).json({ message: "Error checking in to meeting" });
+    }
+  });
+
+  // ================== GROUP CHALLENGE ROUTES ==================
+  
+  // Get all active group challenges
+  app.get("/api/group-challenges", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset) : undefined;
+      
+      const challenges = await storage.getActiveGroupChallenges(limit, offset);
+      res.status(200).json({ challenges });
+    } catch (error: any) {
+      logError("Error getting group challenges", error, req);
+      res.status(500).json({ message: "Error fetching group challenges" });
+    }
+  });
+
+  // Get user's group challenges
+  app.get("/api/my-group-challenges", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const challenges = await storage.getUserGroupChallenges(userId);
+      res.status(200).json({ challenges });
+    } catch (error: any) {
+      logError("Error getting user group challenges", error, req);
+      res.status(500).json({ message: "Error fetching your group challenges" });
+    }
+  });
+
+  // Get a single group challenge with participants and leaderboard
+  app.get("/api/group-challenges/:id", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      const challenge = await storage.getGroupChallenge(challengeId);
+      
+      if (!challenge) {
+        return res.status(404).json({ message: "Group challenge not found" });
+      }
+      
+      // Get participants and leaderboard
+      const participants = await storage.getGroupChallengeParticipants(challengeId);
+      const leaderboard = await storage.getGroupChallengeLeaderboard(challengeId, 10);
+      
+      // Check if user is participating
+      const userParticipation = participants.find(p => p.userId === req.user.id);
+      
+      res.status(200).json({ 
+        challenge,
+        isParticipating: !!userParticipation,
+        userProgress: userParticipation,
+        participantCount: participants.length,
+        leaderboard
+      });
+    } catch (error: any) {
+      logError("Error getting group challenge details", error, req);
+      res.status(500).json({ message: "Error fetching group challenge details" });
+    }
+  });
+
+  // Create a new group challenge
+  app.post("/api/group-challenges", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const challengeData = insertGroupChallengeSchema.parse({
+        ...req.body,
+        createdBy: req.user.id
+      });
+      
+      const challenge = await storage.createGroupChallenge(challengeData);
+      
+      // Automatically join the creator to the challenge
+      await storage.joinGroupChallenge({
+        groupChallengeId: challenge.id,
+        userId: req.user.id,
+        status: "active"
+      });
+      
+      res.status(201).json({ challenge });
+    } catch (error: any) {
+      logError("Error creating group challenge", error, req);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Join a group challenge
+  app.post("/api/group-challenges/:id/join", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      
+      // Check if challenge exists and is active
+      const challenge = await storage.getGroupChallenge(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Group challenge not found" });
+      }
+      
+      if (challenge.status !== "active") {
+        return res.status(400).json({ message: "This challenge is no longer active" });
+      }
+      
+      // Check if max participants reached
+      if (challenge.maxParticipants) {
+        const participants = await storage.getGroupChallengeParticipants(challengeId);
+        if (participants.length >= challenge.maxParticipants) {
+          return res.status(400).json({ message: "This challenge has reached its maximum number of participants" });
+        }
+      }
+      
+      const participation = await storage.joinGroupChallenge({
+        groupChallengeId: challengeId,
+        userId: req.user.id,
+        status: "active"
+      });
+      
+      res.status(200).json({ 
+        participation,
+        message: "Successfully joined the group challenge!"
+      });
+    } catch (error: any) {
+      logError("Error joining group challenge", error, req);
+      res.status(500).json({ message: "Error joining group challenge" });
+    }
+  });
+
+  // Update progress in a group challenge
+  app.post("/api/group-challenges/:id/progress", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const challengeId = parseInt(req.params.id);
+      const { stepsCompleted } = z.object({
+        stepsCompleted: z.number().min(0)
+      }).parse(req.body);
+      
+      // Check if challenge exists and is active
+      const challenge = await storage.getGroupChallenge(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Group challenge not found" });
+      }
+      
+      if (challenge.status !== "active") {
+        return res.status(400).json({ message: "This challenge is no longer active" });
+      }
+      
+      // Update progress
+      const updatedProgress = await storage.updateGroupChallengeProgress(
+        challengeId,
+        req.user.id,
+        stepsCompleted
+      );
+      
+      // Check if challenge is completed by this user
+      let message = "Progress updated successfully!";
+      if (stepsCompleted >= challenge.totalSteps) {
+        message = "Congratulations! You've completed this challenge!";
+        
+        // Award points for completion
+        await storage.addUserPoints(req.user.id, 50);
+        message += " You earned 50 points!";
+      }
+      
+      res.status(200).json({ 
+        progress: updatedProgress,
+        message
+      });
+    } catch (error: any) {
+      logError("Error updating group challenge progress", error, req);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   // ================== RESEARCH ROUTES ==================
   
   // Get research information on specific topics (no authentication required)

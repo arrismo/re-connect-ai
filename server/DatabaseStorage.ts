@@ -1,11 +1,16 @@
 import { 
   users, challenges, challengeProgresses, matches, messages, interests,
+  meetings, meetingAttendees, groupChallenges, groupChallengeParticipants,
   type User, type InsertUser, 
   type Match, type InsertMatch, 
   type Challenge, type InsertChallenge, 
   type ChallengeProgress, type InsertChallengeProgress,
   type Message, type InsertMessage,
-  type Interest, type InsertInterest
+  type Interest, type InsertInterest,
+  type Meeting, type InsertMeeting,
+  type MeetingAttendee, type InsertMeetingAttendee,
+  type GroupChallenge, type InsertGroupChallenge,
+  type GroupChallengeParticipant, type InsertGroupChallengeParticipant
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, or, inArray } from "drizzle-orm";
@@ -455,5 +460,365 @@ export class DatabaseStorage implements IStorage {
 
   async getAllInterests(): Promise<Interest[]> {
     return db.select().from(interests);
+  }
+
+  // ===========================
+  // Meeting related methods
+  // ===========================
+  async getMeeting(id: number): Promise<Meeting | undefined> {
+    const [meeting] = await db.select().from(meetings).where(eq(meetings.id, id));
+    return meeting;
+  }
+
+  async getAllMeetings(limit?: number, offset?: number): Promise<Meeting[]> {
+    let query = db.select().from(meetings);
+    
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    
+    if (offset !== undefined) {
+      query = query.offset(offset);
+    }
+    
+    return query;
+  }
+
+  async getMeetingsByLocation(latitude: number, longitude: number, radiusInKm: number): Promise<Meeting[]> {
+    // Calculate bounding box for initial filtering
+    const kmPerLat = 111.32; // km per degree latitude
+    const kmPerLng = 111.32 * Math.cos(latitude * (Math.PI / 180)); // km per degree longitude
+    
+    const latDelta = radiusInKm / kmPerLat;
+    const lngDelta = radiusInKm / kmPerLng;
+    
+    const minLat = latitude - latDelta;
+    const maxLat = latitude + latDelta;
+    const minLng = longitude - lngDelta;
+    const maxLng = longitude + lngDelta;
+    
+    // First get meetings within the bounding box (coarse filter)
+    const potentialMeetings = await db.select().from(meetings).where(
+      and(
+        sql`${meetings.latitude} >= ${minLat}`,
+        sql`${meetings.latitude} <= ${maxLat}`,
+        sql`${meetings.longitude} >= ${minLng}`,
+        sql`${meetings.longitude} <= ${maxLng}`
+      )
+    );
+    
+    // Function to calculate actual distance in km using Haversine formula
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+      const R = 6371; // Radius of the Earth in km
+      const dLat = (lat2 - lat1) * (Math.PI / 180);
+      const dLon = (lon2 - lon1) * (Math.PI / 180);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+    
+    // Fine filter: check actual distance for each meeting
+    return potentialMeetings.filter(meeting => {
+      if (meeting.latitude === null || meeting.longitude === null) return false;
+      const distance = calculateDistance(latitude, longitude, meeting.latitude, meeting.longitude);
+      return distance <= radiusInKm;
+    });
+  }
+
+  async createMeeting(meetingData: InsertMeeting): Promise<Meeting> {
+    const [meeting] = await db
+      .insert(meetings)
+      .values(meetingData)
+      .returning();
+    return meeting;
+  }
+
+  async updateMeeting(id: number, meetingData: Partial<Meeting>): Promise<Meeting> {
+    const [updatedMeeting] = await db
+      .update(meetings)
+      .set({
+        ...meetingData,
+        updatedAt: new Date()
+      })
+      .where(eq(meetings.id, id))
+      .returning();
+    return updatedMeeting;
+  }
+
+  async deleteMeeting(id: number): Promise<boolean> {
+    try {
+      // First delete any attendees for this meeting
+      await db
+        .delete(meetingAttendees)
+        .where(eq(meetingAttendees.meetingId, id));
+      
+      // Then delete the meeting
+      const result = await db
+        .delete(meetings)
+        .where(eq(meetings.id, id))
+        .returning({ id: meetings.id });
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error(`Error deleting meeting: ${error}`);
+      return false;
+    }
+  }
+
+  // ===========================
+  // Meeting Attendee related methods
+  // ===========================
+  async getMeetingAttendees(meetingId: number): Promise<MeetingAttendee[]> {
+    return db
+      .select()
+      .from(meetingAttendees)
+      .where(eq(meetingAttendees.meetingId, meetingId));
+  }
+
+  async getUserMeetingAttendance(userId: number): Promise<MeetingAttendee[]> {
+    return db
+      .select()
+      .from(meetingAttendees)
+      .where(eq(meetingAttendees.userId, userId));
+  }
+
+  async attendMeeting(attendeeData: InsertMeetingAttendee): Promise<MeetingAttendee> {
+    // Check if already attending
+    const [existing] = await db
+      .select()
+      .from(meetingAttendees)
+      .where(
+        and(
+          eq(meetingAttendees.meetingId, attendeeData.meetingId),
+          eq(meetingAttendees.userId, attendeeData.userId)
+        )
+      );
+    
+    if (existing) {
+      // Update status if already exists
+      return this.updateAttendanceStatus(
+        attendeeData.meetingId,
+        attendeeData.userId,
+        attendeeData.status || 'going'
+      );
+    }
+    
+    // Create new attendance record
+    const [attendee] = await db
+      .insert(meetingAttendees)
+      .values(attendeeData)
+      .returning();
+    return attendee;
+  }
+
+  async updateAttendanceStatus(meetingId: number, userId: number, status: string): Promise<MeetingAttendee> {
+    const [updatedAttendee] = await db
+      .update(meetingAttendees)
+      .set({ status })
+      .where(
+        and(
+          eq(meetingAttendees.meetingId, meetingId),
+          eq(meetingAttendees.userId, userId)
+        )
+      )
+      .returning();
+    return updatedAttendee;
+  }
+
+  async checkInToMeeting(meetingId: number, userId: number): Promise<MeetingAttendee> {
+    const [attendee] = await db
+      .update(meetingAttendees)
+      .set({
+        checkedIn: true,
+        checkInTime: new Date()
+      })
+      .where(
+        and(
+          eq(meetingAttendees.meetingId, meetingId),
+          eq(meetingAttendees.userId, userId)
+        )
+      )
+      .returning();
+    
+    // If user is not registered as attending, create an attendance record
+    if (!attendee) {
+      return this.attendMeeting({
+        meetingId,
+        userId,
+        status: 'going',
+        checkedIn: true,
+        checkInTime: new Date()
+      });
+    }
+    
+    return attendee;
+  }
+
+  // ===========================
+  // Group Challenge related methods
+  // ===========================
+  async getGroupChallenge(id: number): Promise<GroupChallenge | undefined> {
+    const [challenge] = await db
+      .select()
+      .from(groupChallenges)
+      .where(eq(groupChallenges.id, id));
+    return challenge;
+  }
+
+  async getActiveGroupChallenges(limit?: number, offset?: number): Promise<GroupChallenge[]> {
+    let query = db
+      .select()
+      .from(groupChallenges)
+      .where(eq(groupChallenges.status, 'active'));
+    
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    
+    if (offset !== undefined) {
+      query = query.offset(offset);
+    }
+    
+    return query;
+  }
+
+  async getUserGroupChallenges(userId: number): Promise<GroupChallenge[]> {
+    // Get IDs of group challenges the user is participating in
+    const participations = await db
+      .select({ challengeId: groupChallengeParticipants.groupChallengeId })
+      .from(groupChallengeParticipants)
+      .where(eq(groupChallengeParticipants.userId, userId));
+    
+    if (participations.length === 0) {
+      return [];
+    }
+    
+    // Get the actual challenges
+    return db
+      .select()
+      .from(groupChallenges)
+      .where(
+        inArray(
+          groupChallenges.id,
+          participations.map(p => p.challengeId)
+        )
+      );
+  }
+
+  async createGroupChallenge(challengeData: InsertGroupChallenge): Promise<GroupChallenge> {
+    const [challenge] = await db
+      .insert(groupChallenges)
+      .values(challengeData)
+      .returning();
+    return challenge;
+  }
+
+  async updateGroupChallenge(id: number, challengeData: Partial<GroupChallenge>): Promise<GroupChallenge> {
+    const [updatedChallenge] = await db
+      .update(groupChallenges)
+      .set({
+        ...challengeData,
+        updatedAt: new Date()
+      })
+      .where(eq(groupChallenges.id, id))
+      .returning();
+    return updatedChallenge;
+  }
+
+  // ===========================
+  // Group Challenge Participant related methods
+  // ===========================
+  async getGroupChallengeParticipants(groupChallengeId: number): Promise<GroupChallengeParticipant[]> {
+    return db
+      .select()
+      .from(groupChallengeParticipants)
+      .where(eq(groupChallengeParticipants.groupChallengeId, groupChallengeId));
+  }
+
+  async joinGroupChallenge(participantData: InsertGroupChallengeParticipant): Promise<GroupChallengeParticipant> {
+    // Check if already participating
+    const [existing] = await db
+      .select()
+      .from(groupChallengeParticipants)
+      .where(
+        and(
+          eq(groupChallengeParticipants.groupChallengeId, participantData.groupChallengeId),
+          eq(groupChallengeParticipants.userId, participantData.userId)
+        )
+      );
+    
+    if (existing) {
+      // Already participating, update status if needed
+      if (participantData.status && participantData.status !== existing.status) {
+        const [updated] = await db
+          .update(groupChallengeParticipants)
+          .set({ status: participantData.status })
+          .where(eq(groupChallengeParticipants.id, existing.id))
+          .returning();
+        return updated;
+      }
+      return existing;
+    }
+    
+    // Create new participant record
+    const [participant] = await db
+      .insert(groupChallengeParticipants)
+      .values(participantData)
+      .returning();
+    return participant;
+  }
+
+  async updateGroupChallengeProgress(groupChallengeId: number, userId: number, stepsCompleted: number): Promise<GroupChallengeParticipant> {
+    const [updatedParticipant] = await db
+      .update(groupChallengeParticipants)
+      .set({
+        stepsCompleted,
+        lastUpdated: new Date()
+      })
+      .where(
+        and(
+          eq(groupChallengeParticipants.groupChallengeId, groupChallengeId),
+          eq(groupChallengeParticipants.userId, userId)
+        )
+      )
+      .returning();
+    
+    // Calculate and update points based on progress
+    const [challenge] = await db
+      .select()
+      .from(groupChallenges)
+      .where(eq(groupChallenges.id, groupChallengeId));
+    
+    if (challenge) {
+      const progressPercentage = stepsCompleted / challenge.totalSteps;
+      const pointsEarned = Math.round(progressPercentage * 100); // Simple points calculation
+      
+      // Update points
+      await db
+        .update(groupChallengeParticipants)
+        .set({ pointsEarned })
+        .where(eq(groupChallengeParticipants.id, updatedParticipant.id));
+      
+      // Update the participant record with points
+      updatedParticipant.pointsEarned = pointsEarned;
+    }
+    
+    return updatedParticipant;
+  }
+
+  async getGroupChallengeLeaderboard(groupChallengeId: number, limit?: number): Promise<GroupChallengeParticipant[]> {
+    let query = db
+      .select()
+      .from(groupChallengeParticipants)
+      .where(eq(groupChallengeParticipants.groupChallengeId, groupChallengeId))
+      .orderBy(desc(groupChallengeParticipants.pointsEarned));
+    
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    
+    return query;
   }
 }
