@@ -19,6 +19,11 @@ export default function ChatInterface({ matchId, userId }: ChatInterfaceProps) {
   const [messageText, setMessageText] = useState("");
   const messageContainerRef = useRef<HTMLDivElement>(null);
   
+  // Handle suggestion selection
+  const handleSuggestionSelect = (text: string) => {
+    setMessageText(text);
+  };
+  
   // Get match details and messages
   const { data, isLoading } = useQuery({
     queryKey: ['/api/matches', matchId, 'messages'],
@@ -136,6 +141,7 @@ export default function ChatInterface({ matchId, userId }: ChatInterfaceProps) {
             max={2}
             autoFetch={true}
             refreshInterval={300000} // 5 minutes
+            onSelectSuggestion={handleSuggestionSelect}
           />
         </div>
       )}
