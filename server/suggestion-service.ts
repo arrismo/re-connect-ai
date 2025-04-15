@@ -88,11 +88,13 @@ class SuggestionService {
     const { contextType, user, match, otherUser, challenge, userProgress, partnerProgress, recentMessages } = context;
 
     // Base instructions
-    prompt = `Generate 2-3 contextually relevant, supportive, and helpful suggestion bubbles for a recovery support app user. 
+    prompt = `Generate 2-3 contextually relevant, supportive, and helpful suggestion bubbles for a recovery support app user focused on alcohol addiction recovery. 
 Format each suggestion as a JSON array with objects having these fields:
-- text: The actual suggestion text (30-60 characters)
+- text: The actual suggestion text (30-60 characters) that provides support for alcohol addiction recovery
 - type: One of these categories: "encouragement", "tip", "question", "reminder", or "resource"
 - priority: "low", "medium", or "high" based on relevance
+
+Focus on sobriety maintenance, coping strategies for alcohol cravings, celebrating milestones in recovery, and general wellbeing during recovery.
 
 Current context: ${contextType}\n\n`;
 
