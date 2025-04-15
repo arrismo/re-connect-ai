@@ -770,11 +770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(200).json({ 
           progress: updatedProgress,
           challenge: completedChallenge,
-          achievement: {
-            type: "challenge",
-            title: "Challenge Completed",
-            points: 100
-          }
+          points: 100
         });
       }
       
@@ -821,7 +817,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         daysSober
       );
       
-      // Achievements feature removed
       // Award points based on progress milestones
       if (daysSober >= 7 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 1)) {
         await storage.updateChallengeProgress(challengeId, userId, 1);
@@ -846,8 +841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(200).json({ 
-        progress: updatedProgress,
-        achievement
+        progress: updatedProgress
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -918,7 +912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Record check-in
       const updatedProgress = await storage.recordCheckIn(challengeId, userId);
       
-      // Achievements feature removed, just award points for streaks
+      // Award points for streaks
       
       if (updatedProgress.currentStreak !== null && updatedProgress.currentStreak >= 7 && (!updatedProgress.stepsCompleted || updatedProgress.stepsCompleted < 1)) {
         await storage.updateChallengeProgress(challengeId, userId, 1);
@@ -955,8 +949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(200).json({ 
-        progress: updatedProgress,
-        achievement
+        progress: updatedProgress
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
