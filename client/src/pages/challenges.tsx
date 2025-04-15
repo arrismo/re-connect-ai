@@ -162,7 +162,7 @@ export default function Challenges() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-2">Recovery Challenges</h1>
         <p className="text-neutral-600">
-          AI-generated recovery challenges to help you and your accountability partner maintain sobriety.
+          Curated recovery challenges to help you and your accountability partner maintain sobriety and track your progress.
         </p>
       </div>
       
@@ -240,7 +240,7 @@ export default function Challenges() {
       
       {/* Create Challenge Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px]">
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Select Recovery Challenge</DialogTitle>
           </DialogHeader>

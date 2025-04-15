@@ -188,7 +188,7 @@ export default function CreateChallengeForm({ matches, onSubmit, isSubmitting }:
               <FormLabel>Challenge Title</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="Select a recovery challenge" 
+                  placeholder="Select a recovery challenge from the list below" 
                   {...field} 
                   className={field.value ? "bg-primary/5 border-primary/20" : "text-neutral-400 italic"}
                   readOnly
@@ -211,7 +211,7 @@ export default function CreateChallengeForm({ matches, onSubmit, isSubmitting }:
               <FormLabel>Description</FormLabel>
               <FormControl>
                 <Textarea 
-                  placeholder="Select a recovery challenge" 
+                  placeholder="Select a recovery challenge from the list below" 
                   {...field} 
                   className={field.value ? "bg-primary/5 border-primary/20" : "text-neutral-400 italic"}
                   readOnly

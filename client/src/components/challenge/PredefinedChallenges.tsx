@@ -63,7 +63,7 @@ export function PredefinedChallenges({ onChallengeSelected }: PredefinedChalleng
     <div className="space-y-4">
       <h3 className="text-lg font-medium mb-4 text-center">Select a Recovery Challenge</h3>
       
-      <div className="grid gap-4">
+      <div className="grid gap-4 max-h-[40vh] overflow-y-auto px-1 py-2">
         {PREDEFINED_CHALLENGES.map((challenge, index) => (
           <div 
             key={index}
