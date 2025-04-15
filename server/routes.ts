@@ -1102,6 +1102,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: error.message });
     }
   });
+  
+  // ================== SUGGESTION ROUTES ==================
+  
+  // Get contextual suggestions based on the current state
+  app.post("/api/suggestions", ensureAuthenticated, async (req: any, res) => {
+    try {
+      const { 
+        contextType, 
+        matchId, 
+        challengeId,
+        additionalContext 
+      } = z.object({
+        contextType: z.enum(['chat', 'challenge', 'match', 'dashboard']),
+        matchId: z.number().optional(),
+        challengeId: z.number().optional(),
+        additionalContext: z.record(z.any()).optional()
+      }).parse(req.body);
+      
+      // Start building the context object
+      const suggestionContext: SuggestionContext = {
+        contextType,
+        user: req.user,
+        additionalContext
+      };
+      
+      // Add match-specific context if provided
+      if (matchId) {
+        const match = await storage.getMatch(matchId);
+        if (!match) {
+          return res.status(404).json({ message: "Match not found" });
+        }
+        
+        // Check if user is part of this match
+        if (match.userId1 !== req.user.id && match.userId2 !== req.user.id) {
+          return res.status(403).json({ message: "You don't have access to this match" });
+        }
+        
+        // Add match to context
+        suggestionContext.match = match;
+        
+        // Get other user details
+        const otherUserId = match.userId1 === req.user.id ? match.userId2 : match.userId1;
+        const otherUser = await storage.getUser(otherUserId);
+        if (otherUser) {
+          suggestionContext.otherUser = otherUser;
+        }
+        
+        // If it's a chat context, get recent messages
+        if (contextType === 'chat') {
+          const messages = await storage.getRecentMatchMessages(matchId, 5);
+          suggestionContext.recentMessages = messages;
+        }
+      }
+      
+      // Add challenge-specific context if provided
+      if (challengeId) {
+        const challenge = await storage.getChallenge(challengeId);
+        if (!challenge) {
+          return res.status(404).json({ message: "Challenge not found" });
+        }
+        
+        // Add challenge to context
+        suggestionContext.challenge = challenge;
+        
+        // Get progress for both users
+        const userProgress = await storage.getChallengeProgress(challengeId, req.user.id);
+        if (userProgress) {
+          suggestionContext.userProgress = userProgress;
+        }
+        
+        // If we have a match, get partner progress
+        if (suggestionContext.match) {
+          const otherUserId = suggestionContext.match.userId1 === req.user.id 
+            ? suggestionContext.match.userId2 
+            : suggestionContext.match.userId1;
+            
+          const partnerProgress = await storage.getChallengeProgress(challengeId, otherUserId);
+          if (partnerProgress) {
+            suggestionContext.partnerProgress = partnerProgress;
+          }
+        }
+      }
+      
+      // Generate suggestions using the suggestion service
+      const suggestions = await suggestionService.generateSuggestions(suggestionContext);
+      
+      res.status(200).json({ suggestions });
+    } catch (error: any) {
+      console.error("Error generating suggestions:", error);
+      res.status(400).json({ message: error.message || "Failed to generate suggestions" });
+    }
+  });
 
   // Create HTTP server
   const httpServer = createServer(app);
