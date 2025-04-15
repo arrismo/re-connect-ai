@@ -57,6 +57,18 @@ function Router() {
         </AppShell>
       )} />
       
+      <ProtectedRoute path="/meetings" component={() => (
+        <AppShell>
+          <MeetingsPage />
+        </AppShell>
+      )} />
+      
+      <ProtectedRoute path="/group-challenges" component={() => (
+        <AppShell>
+          <GroupChallengePage />
+        </AppShell>
+      )} />
+      
       {/* Achievements route removed */}
       
       <ProtectedRoute path="/settings" component={() => (

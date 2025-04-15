@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Progress,
-  ProgressIndicator 
-} from "@/components/ui/progress";
+import { Progress } from "@/components/ui/progress";
 import { 
   Table, 
   TableBody, 
@@ -32,7 +29,7 @@ import {
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trophy, Users, Calendar, Clock, Plus, Award } from "lucide-react";
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { format } from 'date-fns';

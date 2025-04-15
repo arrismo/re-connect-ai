@@ -6,7 +6,9 @@ import {
   CheckSquare,
   MessageSquare,
   Settings,
-  Menu
+  Menu,
+  MapPin,
+  Users
 } from "lucide-react";
 import { useState } from "react";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
@@ -20,6 +22,8 @@ const navItems = [
   { icon: Home, label: "Dashboard", href: "/dashboard" },
   { icon: UsersRound, label: "Matches", href: "/matches" },
   { icon: CheckSquare, label: "Challenges", href: "/challenges", badge: false },
+  { icon: Users, label: "Group Challenges", href: "/group-challenges" },
+  { icon: MapPin, label: "Meetings", href: "/meetings" },
   { icon: MessageSquare, label: "Messages", href: "/messages" },
   { icon: Settings, label: "Settings", href: "/settings" }
 ];
@@ -98,8 +102,15 @@ export default function AppShell({ children }: AppShellProps) {
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex-1 flex justify-between items-center">
-            <h2 className="text-lg font-semibold capitalize">
-              {location.substring(1) || "Dashboard"}
+            <h2 className="text-lg font-semibold">
+              {location === "/dashboard" && "Dashboard"}
+              {location === "/matches" && "Matches"}
+              {location === "/challenges" && "Challenges"}
+              {location === "/group-challenges" && "Group Challenges"}
+              {location === "/meetings" && "Meeting Finder"}
+              {location === "/messages" && "Messages"}
+              {location === "/settings" && "Settings"}
+              {!["/dashboard", "/matches", "/challenges", "/group-challenges", "/meetings", "/messages", "/settings"].includes(location) && (location.substring(1) || "Dashboard")}
             </h2>
             <div className="flex items-center gap-4">
               <NotificationDropdown />
