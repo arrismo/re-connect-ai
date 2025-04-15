@@ -30,7 +30,7 @@ class SuggestionService {
       const genAI = new GoogleGenerativeAI(apiKey);
       
       this.model = genAI.getGenerativeModel({
-        model: "gemini-pro",
+        model: "gemini-1.5-pro", // Updated to use the latest model name
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HARASSMENT,
