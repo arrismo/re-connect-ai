@@ -50,11 +50,15 @@ const challengeSchema = z.object({
   totalSteps: z.number({
     required_error: "Please enter the number of steps",
   }).min(1, { message: "Must have at least 1 step" }).max(30, { message: "Cannot exceed 30 steps" }),
-  startDate: z.date({
+  startDate: z.coerce.date({
     required_error: "Please select a start date",
+  }).refine(date => !isNaN(date.getTime()), {
+    message: "Invalid start date format"
   }),
-  endDate: z.date({
+  endDate: z.coerce.date({
     required_error: "Please select an end date",
+  }).refine(date => !isNaN(date.getTime()), {
+    message: "Invalid end date format"
   }),
 }).refine(data => data.endDate > data.startDate, {
   message: "End date must be after start date",
@@ -127,7 +131,13 @@ export default function CreateChallengeForm({ matches, onSubmit, isSubmitting }:
   };
   
   const handleSubmit = (values: z.infer<typeof challengeSchema>) => {
-    onSubmit(values);
+    // Ensure startDate and endDate are proper Date objects
+    const formattedValues = {
+      ...values,
+      startDate: values.startDate instanceof Date ? values.startDate : new Date(values.startDate),
+      endDate: values.endDate instanceof Date ? values.endDate : new Date(values.endDate)
+    };
+    onSubmit(formattedValues);
   };
   
   // Helper text based on challenge type

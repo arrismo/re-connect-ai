@@ -620,7 +620,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new challenge
   app.post("/api/challenges", ensureAuthenticated, async (req: any, res) => {
     try {
-      const challengeData = insertChallengeSchema.parse(req.body);
+      // Parse and format the dates properly
+      const body = req.body;
+      
+      // Ensure dates are properly formatted
+      if (body.startDate && typeof body.startDate === 'string') {
+        body.startDate = new Date(body.startDate);
+      }
+      
+      if (body.endDate && typeof body.endDate === 'string') {
+        body.endDate = new Date(body.endDate);
+      }
+      
+      const challengeData = insertChallengeSchema.parse(body);
       
       // Check if user is part of the match
       const match = await storage.getMatch(challengeData.matchId);
