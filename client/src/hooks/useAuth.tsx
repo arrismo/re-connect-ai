@@ -30,7 +30,7 @@ type AuthContextType = {
 };
 
 type LoginData = {
-  email: string;
+  username: string; // Actually contains the email
   password: string;
 };
 

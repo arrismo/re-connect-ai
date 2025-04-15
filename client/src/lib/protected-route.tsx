@@ -16,7 +16,7 @@ export function ProtectedRoute({
   return (
     <Route path={path}>
       {() => {
-        if (auth.loading) {
+        if (auth.isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -24,7 +24,7 @@ export function ProtectedRoute({
           );
         }
 
-        if (!auth.isAuthenticated) {
+        if (!auth.user) {
           return <Redirect to="/auth" />;
         }
 
@@ -48,7 +48,7 @@ export function PublicOnlyRoute({
   return (
     <Route path={path}>
       {() => {
-        if (auth.loading) {
+        if (auth.isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -56,7 +56,7 @@ export function PublicOnlyRoute({
           );
         }
 
-        if (auth.isAuthenticated) {
+        if (auth.user) {
           return <Redirect to="/dashboard" />;
         }
 
