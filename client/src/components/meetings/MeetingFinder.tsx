@@ -104,44 +104,72 @@ const MeetingFinder: React.FC<MeetingFinderProps> = ({ onSelectMeeting }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
-          <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search meetings by name, description, or location"
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      {/* Search bar - Full width on mobile, fixed at top */}
+      <div className="sticky top-0 z-10 bg-background pt-1 pb-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground transform -translate-y-1/2" />
+              <Input
+                placeholder="Search meetings by name or location"
+                className="pl-9 h-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-10 w-10 md:hidden flex-shrink-0"
+              onClick={() => setFilterOpen(!filterOpen)}
+              aria-label="Filters"
+            >
+              <Filter size={18} />
+            </Button>
+            
+            <Button 
+              variant={useCurrentLocation ? "default" : "outline"} 
+              size="icon"
+              className="h-10 w-10 md:hidden flex-shrink-0"
+              onClick={() => setUseCurrentLocation(!useCurrentLocation)}
+              aria-label="Use my location"
+            >
+              <MapPin size={18} />
+            </Button>
+          </div>
+          
+          {/* Desktop buttons row */}
+          <div className="hidden md:flex gap-3">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={() => setFilterOpen(!filterOpen)}
+            >
+              <Filter size={16} />
+              <span>Filters</span>
+            </Button>
+            
+            <Button 
+              variant={useCurrentLocation ? "default" : "outline"} 
+              className="flex items-center gap-2"
+              onClick={() => setUseCurrentLocation(!useCurrentLocation)}
+            >
+              <MapPin size={16} />
+              <span>Use My Location</span>
+            </Button>
+          </div>
         </div>
-        
-        <Button 
-          variant="outline" 
-          className="flex items-center gap-2"
-          onClick={() => setFilterOpen(!filterOpen)}
-        >
-          <Filter size={16} />
-          <span>Filters</span>
-        </Button>
-        
-        <Button 
-          variant={useCurrentLocation ? "default" : "outline"} 
-          className="flex items-center gap-2"
-          onClick={() => setUseCurrentLocation(!useCurrentLocation)}
-        >
-          <MapPin size={16} />
-          <span className="hidden sm:inline">Use My Location</span>
-        </Button>
       </div>
       
-      {/* Advanced filters */}
+      {/* Advanced filters - Fullscreen overlay on mobile */}
       {filterOpen && (
-        <div className="bg-background p-4 rounded-md border">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="w-full md:w-1/3">
+        <div className="bg-background p-4 rounded-md border shadow-md">
+          <div className="flex flex-col gap-4">
+            <div className="w-full">
               <label className="text-sm font-medium mb-1 block">Meeting Type</label>
               <Select value={meetingType} onValueChange={setMeetingType}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
@@ -156,13 +184,13 @@ const MeetingFinder: React.FC<MeetingFinderProps> = ({ onSelectMeeting }) => {
             </div>
             
             {useCurrentLocation && (
-              <div className="w-full md:w-1/3">
-                <label className="text-sm font-medium mb-1 block">Search Radius (km)</label>
+              <div className="w-full">
+                <label className="text-sm font-medium mb-1 block">Search Radius</label>
                 <Select 
                   value={searchRadius.toString()} 
                   onValueChange={(value) => setSearchRadius(parseInt(value))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue placeholder="10 km" />
                   </SelectTrigger>
                   <SelectContent>
@@ -179,9 +207,9 @@ const MeetingFinder: React.FC<MeetingFinderProps> = ({ onSelectMeeting }) => {
         </div>
       )}
       
-      {/* Map view */}
+      {/* Map view - Height responsive by device */}
       {userLocation && (
-        <div className="h-[300px] rounded-lg overflow-hidden border mb-6">
+        <div className="h-[200px] sm:h-[250px] md:h-[300px] rounded-lg overflow-hidden border mb-4">
           <MeetingLocationMap 
             center={userLocation} 
             zoom={11} 
@@ -191,20 +219,29 @@ const MeetingFinder: React.FC<MeetingFinderProps> = ({ onSelectMeeting }) => {
         </div>
       )}
       
-      {/* Results */}
+      {/* Results with better mobile sizing */}
       <div>
-        <h3 className="text-lg font-medium mb-4">
-          {isLoading ? "Loading meetings..." : 
-           filteredMeetings.length === 0 ? "No meetings found" : 
-           `Found ${filteredMeetings.length} meetings`}
+        <h3 className="text-base md:text-lg font-medium mb-3 flex items-center">
+          {isLoading ? (
+            <>
+              <div className="animate-spin h-4 w-4 mr-2 text-primary" /> 
+              Loading meetings...
+            </>
+          ) : filteredMeetings.length === 0 ? (
+            "No meetings found"
+          ) : (
+            `Found ${filteredMeetings.length} meetings`
+          )}
         </h3>
         
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin h-8 w-8 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl shadow-sm p-5 h-32 animate-pulse" />
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {filteredMeetings.map((meeting) => (
               <MeetingCard 
                 key={meeting.id} 
@@ -222,40 +259,47 @@ const MeetingFinder: React.FC<MeetingFinderProps> = ({ onSelectMeeting }) => {
 const MeetingCard = ({ meeting, onClick }: { meeting: any, onClick: () => void }) => {
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   
+  // Format the meeting type for display
+  const getMeetingTypeLabel = (type: string) => {
+    switch(type) {
+      case 'aa': return 'Alcoholics Anonymous';
+      case 'na': return 'Narcotics Anonymous';
+      case 'smart_recovery': return 'SMART Recovery';
+      case 'refuge_recovery': return 'Refuge Recovery';
+      default: return type;
+    }
+  };
+  
   return (
     <Card 
-      className="hover:shadow-md transition-shadow cursor-pointer"
+      className="hover:shadow-md transition-shadow cursor-pointer active:bg-muted/50 touch-manipulation"
       onClick={onClick}
     >
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-base">{meeting.name}</CardTitle>
+      <CardHeader className="pb-2 pt-3 px-3 sm:px-6 sm:pt-4">
+        <div className="flex justify-between items-start gap-2">
+          <CardTitle className="text-sm sm:text-base leading-tight">{meeting.name}</CardTitle>
           {meeting.dayOfWeek !== undefined && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary whitespace-nowrap flex-shrink-0">
               {dayNames[meeting.dayOfWeek]}
             </span>
           )}
         </div>
-        <CardDescription className="text-xs">
-          {meeting.meetingType === 'aa' ? 'Alcoholics Anonymous' : 
-           meeting.meetingType === 'na' ? 'Narcotics Anonymous' : 
-           meeting.meetingType === 'smart_recovery' ? 'SMART Recovery' : 
-           meeting.meetingType === 'refuge_recovery' ? 'Refuge Recovery' : 
-           meeting.meetingType}
+        <CardDescription className="text-xs leading-snug">
+          {getMeetingTypeLabel(meeting.meetingType)}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-1 pt-0">
-        <div className="flex items-center text-xs">
-          <MapPin size={12} className="mr-1 text-muted-foreground" />
-          <span>{meeting.address || 'No address'}, {meeting.city}</span>
+      <CardContent className="space-y-1.5 pt-0 px-3 sm:px-6">
+        <div className="flex items-start">
+          <MapPin size={12} className="mr-1.5 mt-0.5 text-muted-foreground flex-shrink-0" />
+          <span className="text-xs line-clamp-2">{meeting.address || 'No address'}, {meeting.city}</span>
         </div>
-        <div className="flex items-center text-xs">
-          <Clock size={12} className="mr-1 text-muted-foreground" />
-          <span>{meeting.startTime || 'TBD'}{meeting.endTime ? ` - ${meeting.endTime}` : ''}</span>
+        <div className="flex items-center">
+          <Clock size={12} className="mr-1.5 text-muted-foreground flex-shrink-0" />
+          <span className="text-xs">{meeting.startTime || 'TBD'}{meeting.endTime ? ` - ${meeting.endTime}` : ''}</span>
         </div>
-        <div className="flex items-center text-xs">
-          <Calendar size={12} className="mr-1 text-muted-foreground" />
-          <span>
+        <div className="flex items-center">
+          <Calendar size={12} className="mr-1.5 text-muted-foreground flex-shrink-0" />
+          <span className="text-xs">
             {meeting.frequency === 'weekly' ? 'Weekly' : 
              meeting.frequency === 'daily' ? 'Daily' : 
              meeting.frequency === 'monthly' ? 'Monthly' : 
@@ -264,10 +308,13 @@ const MeetingCard = ({ meeting, onClick }: { meeting: any, onClick: () => void }
         </div>
       </CardContent>
       {meeting.distance && (
-        <CardFooter className="pt-0 text-xs text-muted-foreground">
-          {(meeting.distance < 1) 
-            ? `${Math.round(meeting.distance * 1000)} meters away` 
-            : `${meeting.distance.toFixed(1)} km away`}
+        <CardFooter className="pt-0 pb-3 px-3 sm:px-6 text-xs text-muted-foreground flex justify-between items-center">
+          <span>
+            {(meeting.distance < 1) 
+              ? `${Math.round(meeting.distance * 1000)} meters away` 
+              : `${meeting.distance.toFixed(1)} km away`}
+          </span>
+          <span className="text-primary text-xs font-medium">View Details</span>
         </CardFooter>
       )}
     </Card>

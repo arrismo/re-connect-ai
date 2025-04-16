@@ -75,47 +75,52 @@ const GroupChallengeCard: React.FC<GroupChallengeCardProps> = ({
     : 0;
   
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <div className="flex justify-between items-start">
+    <Card className="h-full flex flex-col overflow-hidden touch-manipulation">
+      <CardHeader className="pb-2 px-4 sm:px-6 pt-4">
+        <div className="flex justify-between items-start gap-2">
           <div>
-            <CardTitle className="text-lg md:text-xl">{challenge.title}</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-base sm:text-lg md:text-xl leading-tight">{challenge.title}</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               {challenge.challengeType || 'General'} Challenge
             </CardDescription>
           </div>
           <Badge 
             variant={isActive ? "default" : "secondary"}
+            className="text-xs whitespace-nowrap flex-shrink-0"
           >
             {isActive ? 'Active' : challenge.status}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="flex-grow space-y-3">
-        <p className="text-sm">{challenge.description}</p>
+      <CardContent className="flex-grow space-y-3 px-4 sm:px-6 py-2">
+        <p className="text-xs sm:text-sm line-clamp-2">{challenge.description}</p>
         
-        <div className="flex items-center gap-2 text-sm">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span>
-            {startDate ? format(startDate, 'MMM d, yyyy') : 'Start date not set'} 
-            {endDate ? ` - ${format(endDate, 'MMM d, yyyy')}` : ''}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-2 text-sm">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          <span>
-            {challenge.participantCount || 0} participants
-          </span>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs sm:text-sm">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+            <span className="truncate">
+              {startDate ? format(startDate, 'MMM d') : 'No date'} 
+              {endDate ? ` - ${format(endDate, 'MMM d')}` : ''}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+            <span>
+              {challenge.participantCount || 0} participants
+            </span>
+          </div>
         </div>
         
         {hasJoined && (
           <ChallengeProgress progress={progressPercentage} />
         )}
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between px-4 sm:px-6 py-3">
         <Button
           variant="secondary"
+          size="sm"
+          className="w-full sm:w-auto"
           onClick={() => onView(challenge.id)}
         >
           View Details
@@ -123,22 +128,26 @@ const GroupChallengeCard: React.FC<GroupChallengeCardProps> = ({
         
         {!hasJoined && isActive ? (
           <Button 
-            variant="default" 
+            variant="default"
+            size="sm"
+            className="w-full sm:w-auto"
             onClick={() => onJoin(challenge.id)}
           >
             Join Challenge
           </Button>
         ) : hasJoined ? (
           <Button 
-            variant="outline" 
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto"
             onClick={() => onView(challenge.id)}
           >
             {userProgress.stepsCompleted >= challenge.totalSteps 
               ? 'Completed' 
-              : 'Continue Challenge'}
+              : 'Continue'}
           </Button>
         ) : (
-          <Button variant="outline" disabled>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled>
             {challenge.status === 'completed' ? 'Ended' : 'Coming Soon'}
           </Button>
         )}
@@ -593,7 +602,7 @@ const GroupChallenges: React.FC<GroupChallengesProps> = ({ userId, challenges: e
               <Loader2 className="animate-spin h-6 w-6 text-primary" />
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
               {userChallenges.map(challenge => (
                 <GroupChallengeCard 
                   key={challenge.id}
@@ -616,7 +625,7 @@ const GroupChallenges: React.FC<GroupChallengesProps> = ({ userId, challenges: e
             <Loader2 className="animate-spin h-6 w-6 text-primary" />
           </div>
         ) : activeChallenges.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
             {activeChallenges.map(challenge => (
               <GroupChallengeCard 
                 key={challenge.id}
