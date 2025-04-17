@@ -177,7 +177,15 @@ export class MemStorage implements IStorage {
     const id = this.userIdCounter++;
     const now = new Date();
     const user: User = { 
-      ...userData, 
+      username: userData.username,
+      password: userData.password,
+      displayName: userData.displayName,
+      email: userData.email,
+      bio: userData.bio ?? null,
+      interests: userData.interests ?? null,
+      goals: userData.goals ?? null,
+      experiences: userData.experiences ?? null,
+      profilePic: userData.profilePic ?? null,
       id, 
       points: 0,
       createdAt: now,
@@ -215,7 +223,7 @@ export class MemStorage implements IStorage {
       throw new Error(`User with id ${id} not found`);
     }
     
-    const updatedUser = { ...user, points: user.points + points };
+    const updatedUser = { ...user, points: (user.points ?? 0) + points };
     this.users.set(id, updatedUser);
     return updatedUser;
   }
@@ -252,7 +260,11 @@ export class MemStorage implements IStorage {
     const id = this.matchIdCounter++;
     const now = new Date();
     const match: Match = { 
-      ...matchData, 
+      userId1: matchData.userId1,
+      userId2: matchData.userId2,
+      matchScore: matchData.matchScore,
+      status: matchData.status ?? 'pending',
+      matchDetails: matchData.matchDetails ?? null,
       id,
       createdAt: now,
       updatedAt: now
@@ -302,7 +314,15 @@ export class MemStorage implements IStorage {
     const id = this.challengeIdCounter++;
     const now = new Date();
     const challenge: Challenge = { 
-      ...challengeData, 
+      type: challengeData.type,
+      matchId: challengeData.matchId,
+      title: challengeData.title,
+      description: challengeData.description,
+      startDate: challengeData.startDate,
+      endDate: challengeData.endDate,
+      totalSteps: challengeData.totalSteps,
+      status: challengeData.status ?? 'inactive',
+      challengeType: challengeData.challengeType ?? 'unknown',
       id,
       createdAt: now
     };
@@ -334,7 +354,15 @@ export class MemStorage implements IStorage {
     const id = this.progressIdCounter++;
     const now = new Date();
     const progress: ChallengeProgress = { 
-      ...progressData, 
+      challengeId: progressData.challengeId,
+      userId: progressData.userId,
+      stepsCompleted: progressData.stepsCompleted ?? null,
+      lastCheckIn: progressData.lastCheckIn ?? null,
+      currentStreak: progressData.currentStreak ?? null,
+      longestStreak: progressData.longestStreak ?? null,
+      daysSober: progressData.daysSober ?? null,
+      lastSoberDate: progressData.lastSoberDate ?? null,
+      additionalData: progressData.additionalData ?? null,
       id,
       lastUpdated: now
     };
@@ -519,7 +547,7 @@ export class MemStorage implements IStorage {
   async getMatchMessages(matchId: number): Promise<Message[]> {
     const messages = Array.from(this.messages.values())
       .filter(message => message.matchId === matchId)
-      .sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime());
+      .sort((a, b) => (a.sentAt?.getTime() ?? 0) - (b.sentAt?.getTime() ?? 0));
     
     return messages;
   }
@@ -637,11 +665,24 @@ export class MemStorage implements IStorage {
   async createMeeting(meetingData: InsertMeeting): Promise<Meeting> {
     const id = this.meetingIdCounter++;
     const now = new Date();
+    // Ensure all properties match the Meeting schema, providing defaults
     const meeting: Meeting = {
-      ...meetingData,
+      name: meetingData.name, // Required
+      meetingType: meetingData.meetingType, // Required
+      city: meetingData.city, // Required
+      country: meetingData.country, // Required
+      description: meetingData.description ?? null, // Default undefined to null
+      address: meetingData.address ?? null, // Default undefined to null
+      latitude: meetingData.latitude ?? null, // Default undefined to null
+      longitude: meetingData.longitude ?? null, // Default undefined to null
+      startTime: meetingData.startTime, // Required
+      endTime: meetingData.endTime, // Required
+      frequency: meetingData.frequency ?? null, 
+      createdBy: meetingData.createdBy ?? null, 
+      state: meetingData.state ?? null, 
       id,
-      createdAt: now,
-      updatedAt: now
+      createdAt: now, // Assume schema allows Date
+      updatedAt: now // Assume schema allows Date
     };
     
     this.meetings.set(id, meeting);
@@ -710,7 +751,13 @@ export class MemStorage implements IStorage {
     const id = this.meetingAttendeeIdCounter++;
     const now = new Date();
     const attendee: MeetingAttendee = {
-      ...attendeeData,
+      userId: attendeeData.userId,
+      meetingId: attendeeData.meetingId,
+      status: attendeeData.status ?? 'going',
+      checkedIn: attendeeData.checkedIn ?? null,
+      checkInTime: attendeeData.checkInTime ?? null,
+      reminderSet: attendeeData.reminderSet ?? null,
+      notes: attendeeData.notes ?? null,
       id,
       createdAt: now
     };
@@ -788,16 +835,19 @@ export class MemStorage implements IStorage {
   }
   
   async getUserGroupChallenges(userId: number): Promise<GroupChallenge[]> {
-    // Get challenge IDs where user is participating
+    // Get all participations for the user
     const participations = Array.from(this.groupChallengeParticipants.values())
       .filter(participant => participant.userId === userId);
     
+    // If the user is not participating in any challenges, return empty array
     if (participations.length === 0) {
       return [];
     }
     
+    // Extract the challenge IDs from the participations
     const challengeIds = participations.map(p => p.groupChallengeId);
     
+    // Filter the actual group challenges based on those IDs
     return Array.from(this.groupChallenges.values())
       .filter(challenge => challengeIds.includes(challenge.id));
   }
@@ -805,11 +855,24 @@ export class MemStorage implements IStorage {
   async createGroupChallenge(challengeData: InsertGroupChallenge): Promise<GroupChallenge> {
     const id = this.groupChallengeIdCounter++;
     const now = new Date();
+    // Ensure all properties match the GroupChallenge schema, providing defaults
     const challenge: GroupChallenge = {
-      ...challengeData,
+      title: challengeData.title, // Required
+      description: challengeData.description, // Required
+      startDate: challengeData.startDate, // Required
+      endDate: challengeData.endDate, // Required
+      totalSteps: challengeData.totalSteps, // Required
+      category: challengeData.category, // Required
+      // Provide default status if not in input and schema requires string
+      status: challengeData.status ?? 'active', 
+      // Provide default challengeType if not in input and schema requires string
+      challengeType: challengeData.challengeType ?? 'unknown', 
+      createdBy: challengeData.createdBy ?? null, // Default undefined to null
+      maxParticipants: challengeData.maxParticipants ?? null, // Default undefined to null
+      isPublic: challengeData.isPublic ?? true, // Default undefined to true (or false?)
       id,
-      createdAt: now,
-      updatedAt: now
+      createdAt: now, // Assume schema allows Date
+      updatedAt: now // Assume schema allows Date
     };
     
     this.groupChallenges.set(id, challenge);
@@ -864,12 +927,14 @@ export class MemStorage implements IStorage {
     const id = this.groupChallengeParticipantIdCounter++;
     const now = new Date();
     const participant: GroupChallengeParticipant = {
-      ...participantData,
+      userId: participantData.userId,
+      groupChallengeId: participantData.groupChallengeId,
+      status: participantData.status ?? 'active',
+      stepsCompleted: participantData.stepsCompleted ?? 0,
+      pointsEarned: participantData.pointsEarned ?? 0,
       id,
       joinedAt: now,
-      lastUpdated: now,
-      stepsCompleted: 0,
-      pointsEarned: 0
+      lastUpdated: now
     };
     
     this.groupChallengeParticipants.set(key, participant);
@@ -924,122 +989,6 @@ export class MemStorage implements IStorage {
   
   private toRad(value: number): number {
     return value * Math.PI / 180;
-  }
-  
-  async getUserGroupChallenges(userId: number): Promise<GroupChallenge[]> {
-    // Get all group challenges where the user is a participant
-    const participations = Array.from(this.groupChallengeParticipants.values())
-      .filter(participant => participant.userId === userId);
-    
-    const challengeIds = participations.map(p => p.groupChallengeId);
-    
-    return Array.from(this.groupChallenges.values())
-      .filter(challenge => challengeIds.includes(challenge.id));
-  }
-  
-  async createGroupChallenge(challengeData: InsertGroupChallenge): Promise<GroupChallenge> {
-    const id = this.groupChallengeIdCounter++;
-    const now = new Date();
-    const challenge: GroupChallenge = {
-      ...challengeData,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-    
-    this.groupChallenges.set(id, challenge);
-    return challenge;
-  }
-  
-  async updateGroupChallenge(id: number, challengeData: Partial<GroupChallenge>): Promise<GroupChallenge> {
-    const challenge = await this.getGroupChallenge(id);
-    if (!challenge) {
-      throw new Error(`Group challenge with id ${id} not found`);
-    }
-    
-    const updatedChallenge = { 
-      ...challenge, 
-      ...challengeData,
-      updatedAt: new Date()
-    };
-    
-    this.groupChallenges.set(id, updatedChallenge);
-    return updatedChallenge;
-  }
-  
-  // ==========================
-  // Group Challenge Participant related methods
-  // ==========================
-  
-  async getGroupChallengeParticipants(groupChallengeId: number): Promise<GroupChallengeParticipant[]> {
-    return Array.from(this.groupChallengeParticipants.values())
-      .filter(participant => participant.groupChallengeId === groupChallengeId);
-  }
-  
-  async joinGroupChallenge(participantData: InsertGroupChallengeParticipant): Promise<GroupChallengeParticipant> {
-    const id = this.groupChallengeParticipantIdCounter++;
-    const now = new Date();
-    const participant: GroupChallengeParticipant = {
-      ...participantData,
-      id,
-      joinedAt: now,
-      lastUpdated: now
-    };
-    
-    const key = `${participantData.groupChallengeId}-${participantData.userId}`;
-    this.groupChallengeParticipants.set(key, participant);
-    return participant;
-  }
-  
-  async updateGroupChallengeProgress(groupChallengeId: number, userId: number, stepsCompleted: number): Promise<GroupChallengeParticipant> {
-    const key = `${groupChallengeId}-${userId}`;
-    const participant = this.groupChallengeParticipants.get(key);
-    
-    if (!participant) {
-      return this.joinGroupChallenge({
-        groupChallengeId,
-        userId,
-        stepsCompleted,
-        pointsEarned: stepsCompleted * 10, // Award 10 points per step
-        status: 'active'
-      });
-    }
-    
-    // Calculate points earned (10 points per step)
-    const newSteps = Math.max(0, stepsCompleted - (participant.stepsCompleted || 0));
-    const pointsToAdd = newSteps * 10;
-    
-    const updatedParticipant = { 
-      ...participant, 
-      stepsCompleted,
-      pointsEarned: (participant.pointsEarned || 0) + pointsToAdd,
-      lastUpdated: new Date()
-    };
-    
-    this.groupChallengeParticipants.set(key, updatedParticipant);
-    
-    // Update user's total points if steps were increased
-    if (pointsToAdd > 0) {
-      await this.addUserPoints(userId, pointsToAdd);
-    }
-    
-    return updatedParticipant;
-  }
-  
-  async getGroupChallengeLeaderboard(groupChallengeId: number, limit?: number): Promise<GroupChallengeParticipant[]> {
-    const participants = await this.getGroupChallengeParticipants(groupChallengeId);
-    
-    // Sort by points earned in descending order
-    const sortedParticipants = participants.sort((a, b) => 
-      (b.pointsEarned || 0) - (a.pointsEarned || 0)
-    );
-    
-    // Apply limit if provided
-    if (limit && limit > 0) {
-      return sortedParticipants.slice(0, limit);
-    }
-    
-    return sortedParticipants;
   }
 }
 
