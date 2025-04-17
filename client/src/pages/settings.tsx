@@ -61,7 +61,7 @@ const notificationSchema = z.object({
 });
 
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   
   // Get interests for selection
