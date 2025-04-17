@@ -1,7 +1,27 @@
 // server/app.ts
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes"; // Assuming this sets up API routes and returns the app or router
-import { setupVite, serveStatic, log } from "./vite"; // We might need to adjust Vite/Static handling for serverless
+// Conditionally import Vite-related things ONLY in development
+// Remove setupVite, serveStatic as they are unused here
+// We only need `log` potentially.
+// import { setupVite, serveStatic, log } from "./vite"; 
+
+// Use a basic logger, potentially replaced by Vite's logger in dev
+let log: (...args: any[]) => void = console.log;
+
+// Async IIFE to conditionally load Vite logger in development
+(async () => {
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      const viteUtils = await import("./vite");
+      log = viteUtils.log; // Replace the logger if import succeeds
+      console.log("Using Vite logger."); // Optional: confirm which logger is used
+    } catch (e) {
+      console.warn("Failed to import Vite logger, falling back to console.log", e);
+    }
+  }
+})(); // Immediately invoke the async function
+
 import { seedDatabase } from "./seed"; // Seeding needs to be re-evaluated for serverless
 import { suggestionService } from "./suggestion-service";
 import { researchService } from "./research-service";
@@ -11,7 +31,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Custom Logging Middleware (Keep as is for now)
+// Custom Logging Middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -69,7 +89,7 @@ app.use((req, res, next) => {
 
         logLine += ` :: ${JSON.stringify(sanitizedResponse)}`;
       }
-      log(logLine);
+      log(logLine); // Uses the conditionally assigned `log` function
     }
   });
 
