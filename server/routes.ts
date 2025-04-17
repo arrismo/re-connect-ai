@@ -1406,10 +1406,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new group challenge
   app.post("/api/group-challenges", ensureAuthenticated, async (req: any, res) => {
     try {
-      const challengeData = insertGroupChallengeSchema.parse({
+      // Make sure dates are properly parsed
+      const parsedBody = {
         ...req.body,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
         createdBy: req.user.id
-      });
+      };
+      
+      const challengeData = insertGroupChallengeSchema.parse(parsedBody);
       
       const challenge = await storage.createGroupChallenge(challengeData);
       
