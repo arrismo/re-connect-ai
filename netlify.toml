@@ -31,8 +31,11 @@
 # Optional: Redirect for client-side routing (if using React Router, Wouter, etc.)
 # Uncomment and adjust if needed. This makes sure direct visits to /app/some-page
 # load your index.html so the client router can take over.
-# [[redirects]]
-#   from = "/*"
-#   to = "/index.html"
-#   status = 200
-#   conditions = {Role = ["!admin"], Path = ["!^/api/.*"]} # Example condition 
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  # You might need conditions here depending on your setup.
+  # Example: Only apply if the path doesn't start with /api/
+  # conditions = {Path = ["!^/api/.*"]}
+#   conditions = {Role = ["!admin"], Path = ["!^/api/.*\"]} # Example condition 
