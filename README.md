@@ -1,16 +1,20 @@
 
-# Reconnect - Community Support Matchmaking
+# SupportMatch - Alcohol Recovery Community Platform
 
-A web application that intelligently connects people with accountability partners who share similar challenges and have complementary experiences, creating a supportive community for personal growth.
+A specialized web application for alcohol addiction recovery that intelligently connects users with accountability partners who share similar challenges and have complementary experiences, creating a supportive community focused on sobriety and personal growth.
 
 ## Features
 
-- 🤝 Smart Partner Matching: AI-powered matching system that considers goals, interests, and experiences
-- 💪 Accountability Challenges: Create and participate in challenges with your matched partner
-- 💬 Real-time Chat: Direct messaging with your accountability partner
-- 🏆 Achievement System: Earn points and achievements as you progress
-- 📊 Progress Tracking: Monitor your growth and engagement
-- 🔒 Privacy-Focused: Designed to maintain user privacy while enabling meaningful connections
+- 🤝 AI-Powered Matching: Smart partner matching system that considers recovery goals, interests, and experiences
+- 💪 Personalized Challenges: Create and participate in challenges with your matched partner, including specialized "days sober" and "check-in streak" tracking
+- 🌟 Group Challenges: Join community-wide challenges with leaderboards and group accountability
+- 💬 Real-time Chat: Private messaging with your accountability partner for ongoing support
+- 🏆 Achievement System: Earn points and achievements as you progress through your recovery journey
+- 📊 Progress Tracking: Monitor your sobriety streaks and engagement metrics
+- 🔒 Privacy-Focused: Maintain anonymity with AI-generated usernames while enabling meaningful connections
+- 🗺️ Meeting Finder: Discover local AA meetings with location search, calendar integration, and check-in capabilities
+- 📚 Research Hub: Access evidence-based resources about AA principles and accountability partnerships
+- 📱 Mobile-Friendly: Fully responsive design with touch-friendly interactions for on-the-go support
 
 ## Tech Stack
 
@@ -35,8 +39,8 @@ A web application that intelligently connects people with accountability partner
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/yourusername/reconnect.git
-   cd reconnect
+   git clone https://github.com/yourusername/supportmatch.git
+   cd supportmatch
    ```
 
 2. Install dependencies
@@ -47,19 +51,26 @@ A web application that intelligently connects people with accountability partner
 3. Set up environment variables by creating a `.env` file in the root directory:
    ```
    # Database connection
-   DATABASE_URL=url
-   PGHOST=localhost
+   DATABASE_URL=postgres://username:password@hostname:port/database
+   PGHOST=hostname
    PGUSER=username
    PGPASSWORD=password
-   PGDATABASE=reconnect
-   PGPORT=port
+   PGDATABASE=supportmatch
+   PGPORT=5432
    
    # Google Gemini API
    GEMINI_API_KEY=your_gemini_api_key
    
-   # Session secret
+   # Session secret (for secure cookies)
    SESSION_SECRET=your_random_secret_key
    ```
+
+   Note: To obtain a Gemini API key:
+   1. Visit [Google AI Studio](https://makersuite.google.com/)
+   2. Create an account or sign in with your Google account
+   3. Navigate to the API keys section
+   4. Create a new API key for the Gemini model
+   5. Copy the key to your `.env` file
 
 4. Initialize the database schema
    ```bash
@@ -73,6 +84,20 @@ A web application that intelligently connects people with accountability partner
 
 The application will be available at `http://localhost:5000`
 
+### Demo Accounts
+
+For testing the application, you can use these pre-configured accounts:
+
+1. **User 1**:
+   - Email: `david@gmail.com`
+   - Password: `password123`
+   - Profile: Recovery mentor with 100+ days sober
+
+2. **User 2**:
+   - Email: `test2@example.com`
+   - Password: `test123`
+   - Profile: Recovery enthusiast seeking support
+
 ## System Architecture
 
 ```
@@ -81,42 +106,63 @@ The application will be available at `http://localhost:5000`
 │  React Frontend │────▶│  Express Backend  │────▶│  PostgreSQL DB  │
 │                 │◀────│                   │◀────│                 │
 └─────────────────┘     └───────────────────┘     └─────────────────┘
-                               │      ▲
-                               │      │
-                               ▼      │
-                        ┌─────────────────────┐
-                        │                     │
-                        │   Google Gemini AI  │
-                        │                     │
-                        └─────────────────────┘
+       │    ▲                  │      ▲
+       │    │                  │      │
+       ▼    │                  ▼      │
+┌─────────────────┐     ┌─────────────────────┐
+│                 │     │                     │
+│   WebSockets    │     │   Google Gemini AI  │
+│   (Real-time)   │     │                     │
+└─────────────────┘     └─────────────────────┘
 ```
 
 The application follows a modern full-stack architecture:
 
-1. **Frontend**: React application handles UI rendering, state management and user interactions
-2. **Backend**: Express.js server manages business logic, authentication, and data persistence
-3. **Database**: PostgreSQL stores all application data with Drizzle ORM for type-safe queries
-4. **AI Service**: Google Gemini AI provides intelligent match recommendations based on user profiles
+1. **Frontend**: React application with responsive design for both desktop and mobile experiences
+2. **Backend**: Express.js server managing authentication, business logic, and data persistence
+3. **Database**: PostgreSQL with Drizzle ORM for type-safe data operations
+4. **AI Integration**: Google Gemini AI for intelligent matching, username generation, and contextual suggestions
+5. **Real-time Communication**: WebSockets for instant notifications and live chat functionality
+6. **Mobile Optimization**: Fully responsive design with drawer navigation and touch-friendly UI components
 
 ## Project Structure
 
 - `/client`: React frontend application
   - `/src/components`: Reusable UI components
+    - `/src/components/challenges`: Challenge-related components
+    - `/src/components/meetings`: Meeting finder components
+    - `/src/components/matches`: Match-related components
+    - `/src/components/messages`: Messaging components
+    - `/src/components/ui`: Shadcn UI components  
   - `/src/pages`: Application routes/pages
-  - `/src/hooks`: Custom React hooks (useAuth, useToast, etc.)
+    - `/src/pages/auth`: Authentication pages (login, registration)
+    - `/src/pages/dashboard.tsx`: Main user dashboard
+    - `/src/pages/settings.tsx`: User profile and settings
+    - `/src/pages/group-challenges.tsx`: Group challenges page
+    - `/src/pages/meetings.tsx`: Meeting finder page
+  - `/src/hooks`: Custom React hooks
+    - `/src/hooks/useAuth.tsx`: Authentication hook
+    - `/src/hooks/useToast.tsx`: Toast notifications
+    - `/src/hooks/useWebSocket.tsx`: WebSocket connection management
   - `/src/lib`: Utility functions and client-side configs
-  - `/src/layouts`: Layout components like AppShell
+  - `/src/layouts`: Layout components including AppShell for consistent UI
 
 - `/server`: Express backend
   - `routes.ts`: API endpoints and request handlers
   - `auth.ts`: Authentication logic with Passport.js
   - `ai.ts`: AI matching service with Gemini integration
-  - `storage.ts`: Database operations interface
+  - `DatabaseStorage.ts`: Database implementation of storage interface
+  - `storage.ts`: Storage interface definition
   - `db.ts`: Database connection configuration
   - `seed.ts`: Initial data seeding
+  - `challenge-generator.ts`: Challenge generation with AI
+  - `research-service.ts`: Research content generation
 
 - `/shared`: Shared TypeScript types and schemas
-  - `schema.ts`: Database schema definitions with Drizzle
+  - `schema.ts`: Database schema definitions with Drizzle ORM
+    - User, Match, Challenge, Message models
+    - Meeting, MeetingAttendee models
+    - GroupChallenge, GroupChallengeParticipant models
 
 ## Features in Detail
 
@@ -153,7 +199,40 @@ The application follows a modern full-stack architecture:
 - Message history and search functionality
 - Support for sharing challenge updates and progress
 
+### Meeting Finder
+- Location-based search for AA meetings in your area
+- Interactive map display with meeting details
+- Calendar integration for scheduling and reminders
+- Meeting check-in functionality to track attendance
+- Community ratings and reviews for meeting locations
+- Filtering options by meeting type, time, and accessibility
 
+### Group Challenges
+- Community-wide challenges open to multiple participants
+- Leaderboards to track progress among participants
+- Challenge categories focused on sobriety and wellness
+- Public and private challenge options
+- Step-based progress tracking
+- Achievement rewards and point system
+- Customizable challenge parameters (duration, difficulty)
+
+### Research & Resources
+- Evidence-based articles on recovery principles
+- Information about the effectiveness of accountability partnerships
+- Context-sensitive suggestions throughout the app
+- AI-powered content recommendations based on user journey
+- Searchable resource library for self-education
+
+### Mobile Optimization
+- Responsive layout adapts to different screen sizes
+- Slide-out drawer navigation for mobile devices
+- Bottom navigation bar for quick access to key features
+- Touch-friendly UI elements with appropriate sizing
+- Optimized forms and inputs for mobile interaction
+- Efficient data loading for limited bandwidth scenarios
+- High contrast design for outdoor readability
+- Swipe gestures for common actions
+- Native-like experience through PWA capabilities
 
 ## Deployment
 
