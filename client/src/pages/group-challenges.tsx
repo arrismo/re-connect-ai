@@ -65,7 +65,14 @@ const GroupChallengePage: React.FC = () => {
   });
 
   const handleCreateChallenge = (data: any) => {
-    createChallengeMutation.mutate(data);
+    // Make sure dates are properly handled as Date objects
+    const formattedData = {
+      ...data,
+      // The dates are already Date objects from the form, but we'll ensure they're properly passed
+      startDate: data.startDate instanceof Date ? data.startDate : new Date(data.startDate),
+      endDate: data.endDate instanceof Date ? data.endDate : new Date(data.endDate)
+    };
+    createChallengeMutation.mutate(formattedData);
   };
 
   return (
