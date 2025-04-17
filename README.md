@@ -73,28 +73,13 @@ The application follows a modern full-stack architecture:
    4. Create a new API key for the Gemini model
    5. Copy the key to your `.env` file
 
-4. Initialize the database schema
-   ```bash
-   npm run db:push
-   ```
 
-5. Start the development server
+4. Start the development server
    ```bash
    npm run dev
    ```
 
 The application will be available at `http://localhost:5000`
-
-### Demo Accounts
-
-For testing the application, you can use these pre-configured accounts:
-
-
-   **User 2**:
-   - Email: `test2@example.com`
-   - Password: `test123`
-
-
 
 ## Deployment
 
