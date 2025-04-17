@@ -151,7 +151,7 @@ export default function Settings() {
   };
   
   const handleLogout = () => {
-    logout();
+    logoutMutation.mutate();
   };
 
   return (
