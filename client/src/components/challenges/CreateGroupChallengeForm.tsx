@@ -85,22 +85,26 @@ const CreateGroupChallengeForm: React.FC<CreateGroupChallengeFormProps> = ({
     }
   });
   
-  const handleStartDateChange = (date: Date) => {
-    setStartDate(date);
-    form.setValue('startDate', date);
-    
-    // If end date is before new start date, update it
-    const currentEndDate = form.getValues('endDate');
-    if (currentEndDate && date > currentEndDate) {
-      const newEndDate = addDays(date, 30);
-      setEndDate(newEndDate);
-      form.setValue('endDate', newEndDate);
+  const handleStartDateChange = (date: Date | undefined) => {
+    if (date) {
+      setStartDate(date);
+      form.setValue('startDate', date);
+      
+      // If end date is before new start date, update it
+      const currentEndDate = form.getValues('endDate');
+      if (currentEndDate && date > currentEndDate) {
+        const newEndDate = addDays(date, 30);
+        setEndDate(newEndDate);
+        form.setValue('endDate', newEndDate);
+      }
     }
   };
   
-  const handleEndDateChange = (date: Date) => {
-    setEndDate(date);
-    form.setValue('endDate', date);
+  const handleEndDateChange = (date: Date | undefined) => {
+    if (date) {
+      setEndDate(date);
+      form.setValue('endDate', date);
+    }
   };
   
   return (

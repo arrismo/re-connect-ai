@@ -69,97 +69,119 @@ const GroupChallengePage: React.FC = () => {
   };
 
   return (
-    <div className="container px-4 py-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-1">Group Challenges</h1>
-            <p className="text-muted-foreground">
-              Join challenges with multiple participants to build stronger recovery habits
-            </p>
-          </div>
-          <Button 
-            className="flex items-center gap-2"
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            <Plus size={16} /> 
-            <span>New Challenge</span>
-          </Button>
-        </div>
-      </div>
-      
-      <Tabs defaultValue="active" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 mb-8">
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="my">My Challenges</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="discover">Discover</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="active" className="space-y-4">
-          {isLoadingActive ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : activeChallenges?.challenges && activeChallenges.challenges.length > 0 ? (
-            <GroupChallenges challenges={activeChallenges.challenges} />
-          ) : (
-            <div className="text-center py-12">
-              <h3 className="text-xl font-medium mb-2">No active challenges found</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                There are currently no active group challenges. Check back soon or create your own!
+    <>
+      <div className="container px-4 py-6 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-1">Group Challenges</h1>
+              <p className="text-muted-foreground">
+                Join challenges with multiple participants to build stronger recovery habits
               </p>
-              <Button onClick={() => setCreateDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" /> Create Challenge
-              </Button>
             </div>
-          )}
-        </TabsContent>
+            <Button 
+              className="flex items-center gap-2"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <Plus size={16} /> 
+              <span>New Challenge</span>
+            </Button>
+          </div>
+        </div>
         
-        <TabsContent value="my">
-          {isLoadingUserChallenges ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : userChallenges?.challenges && userChallenges.challenges.length > 0 ? (
-            <GroupChallenges challenges={userChallenges.challenges} />
-          ) : (
+        <Tabs defaultValue="active" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="my">My Challenges</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="discover">Discover</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="active" className="space-y-4">
+            {isLoadingActive ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : activeChallenges?.challenges && activeChallenges.challenges.length > 0 ? (
+              <GroupChallenges challenges={activeChallenges.challenges} />
+            ) : (
+              <div className="text-center py-12">
+                <h3 className="text-xl font-medium mb-2">No active challenges found</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  There are currently no active group challenges. Check back soon or create your own!
+                </p>
+                <Button onClick={() => setCreateDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" /> Create Challenge
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="my">
+            {isLoadingUserChallenges ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : userChallenges?.challenges && userChallenges.challenges.length > 0 ? (
+              <GroupChallenges challenges={userChallenges.challenges} />
+            ) : (
+              <div className="text-center py-12">
+                <div className="mb-4">
+                  <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-medium mb-2">You haven't joined any challenges yet</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  Join a group challenge to track progress together with others in recovery
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button variant="outline" onClick={() => setActiveTab('active')}>
+                    Browse Challenges
+                  </Button>
+                  <Button onClick={() => setCreateDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" /> Create Challenge
+                  </Button>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="completed">
             <div className="text-center py-12">
               <div className="mb-4">
-                <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+                <Trophy className="mx-auto h-12 w-12 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-medium mb-2">You haven't joined any challenges yet</h3>
+              <h3 className="text-xl font-medium mb-2">No completed challenges yet</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Join a group challenge to track progress together with others in recovery
+                Once you complete a challenge, it will appear here
               </p>
-              <Button onClick={() => setActiveTab('discover')}>Browse Challenges</Button>
             </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="completed">
-          <div className="text-center py-12">
-            <div className="mb-4">
-              <Trophy className="mx-auto h-12 w-12 text-muted-foreground" />
+          </TabsContent>
+          
+          <TabsContent value="discover">
+            <div className="text-center py-12">
+              <h3 className="text-xl font-medium mb-2">Discover challenges</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Browse and join upcoming group challenges to improve your recovery journey with others
+              </p>
+              <Button onClick={() => setActiveTab('active')}>See Active Challenges</Button>
             </div>
-            <h3 className="text-xl font-medium mb-2">No completed challenges yet</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Once you complete a challenge, it will appear here
-            </p>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="discover">
-          <div className="text-center py-12">
-            <h3 className="text-xl font-medium mb-2">Discover challenges</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Browse and join upcoming group challenges to improve your recovery journey with others
-            </p>
-            <Button onClick={() => setActiveTab('active')}>See Active Challenges</Button>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {/* Create Challenge Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Group Challenge</DialogTitle>
+          </DialogHeader>
+          <CreateGroupChallengeForm 
+            onSubmit={handleCreateChallenge}
+            isSubmitting={createChallengeMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
