@@ -1,5 +1,5 @@
 
-# SupportMatch - Alcohol Recovery Community Platform
+# ReConnect - Alcohol Recovery Community Platform
 
 A specialized web application for alcohol addiction recovery that intelligently connects users with accountability partners who share similar challenges and have complementary experiences, creating a supportive community focused on sobriety and personal growth.
 
