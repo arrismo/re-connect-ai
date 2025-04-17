@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -8,12 +8,17 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, Trophy, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import GroupChallenges from '@/components/challenges/GroupChallenges';
+import CreateGroupChallengeForm from '@/components/challenges/CreateGroupChallengeForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from '@/hooks/use-toast';
 
 const GroupChallengePage: React.FC = () => {
-  const [activeTab, setActiveTab] = React.useState('active');
+  const [activeTab, setActiveTab] = useState('active');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   // Fetch active group challenges
   const { data: activeChallenges, isLoading: isLoadingActive } = useQuery({
@@ -34,6 +39,34 @@ const GroupChallengePage: React.FC = () => {
     },
     enabled: activeTab === 'my'
   });
+  
+  // Create group challenge mutation
+  const createChallengeMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/group-challenges", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/group-challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/my-group-challenges'] });
+      setCreateDialogOpen(false);
+      toast({
+        title: "Challenge Created",
+        description: "Your new group challenge has been created successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Create Challenge",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateChallenge = (data: any) => {
+    createChallengeMutation.mutate(data);
+  };
 
   return (
     <div className="container px-4 py-6 max-w-7xl mx-auto">
@@ -45,7 +78,10 @@ const GroupChallengePage: React.FC = () => {
               Join challenges with multiple participants to build stronger recovery habits
             </p>
           </div>
-          <Button className="flex items-center gap-2">
+          <Button 
+            className="flex items-center gap-2"
+            onClick={() => setCreateDialogOpen(true)}
+          >
             <Plus size={16} /> 
             <span>New Challenge</span>
           </Button>
@@ -73,6 +109,9 @@ const GroupChallengePage: React.FC = () => {
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 There are currently no active group challenges. Check back soon or create your own!
               </p>
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" /> Create Challenge
+              </Button>
             </div>
           )}
         </TabsContent>
