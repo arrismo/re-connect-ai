@@ -1,0 +1,36 @@
+# netlify.toml
+
+[build]
+  # Command to build the frontend ONLY. Netlify handles the function build.
+  command = "vite build"
+  # Directory containing the static frontend build output.
+  publish = "dist"
+  # Directory where Netlify looks for function source files.
+  functions = "netlify/functions"
+
+# Settings for Netlify Functions
+[functions]
+  # Specifies that our 'api' function uses Node.js.
+  # You might need to specify a version, e.g., "nodejs20.x", if needed.
+  # Check Netlify docs for current defaults/options.
+  node_bundler = "esbuild" # Use esbuild for faster function bundling
+
+# Redirect rule to map API requests to our function
+[[redirects]]
+  # Route incoming requests starting with /api/
+  from = "/api/*"
+  # To our 'api' function (Netlify adds /.netlify/functions/ prefix)
+  to = "/.netlify/functions/api/:splat"
+  # Process the request with the function (not an HTTP redirect)
+  status = 200
+  # Ensure this rule doesn't get overridden by static file serving
+  force = true
+
+# Optional: Redirect for client-side routing (if using React Router, Wouter, etc.)
+# Uncomment and adjust if needed. This makes sure direct visits to /app/some-page
+# load your index.html so the client router can take over.
+# [[redirects]]
+#   from = "/*"
+#   to = "/index.html"
+#   status = 200
+#   conditions = {Role = ["!admin"], Path = ["!^/api/.*"]} # Example condition 
