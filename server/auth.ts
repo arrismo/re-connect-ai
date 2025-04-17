@@ -9,6 +9,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { pool } from "./db";
 import { User as SelectUser } from "@shared/schema";
+import { aiService } from './ai';
 
 declare global {
   namespace Express {
@@ -148,7 +149,7 @@ export function setupAuth(app: Express) {
       const characteristicsArray = Array.isArray(characteristics) ? characteristics : [];
       
       // Import aiService for generating anonymous username
-      const { aiService } = await import('./ai');
+      // const { aiService } = await import('./ai');
       const generatedUsername = await aiService.generateAnonymousUsername(interestsArray, characteristicsArray);
       
       // Ensure the generated username is unique by adding a random suffix if needed
