@@ -15,7 +15,7 @@
   # Check Netlify docs for current defaults/options.
   node_bundler = "esbuild" # Use esbuild for faster function bundling
   # Exclude modules with native dependencies or those not needed at runtime in the function
-  external_node_modules = ["lightningcss"]
+  external_node_modules = ["lightningcss", "esbuild"]
 
 # Redirect rule to map API requests to our function
 [[redirects]]
