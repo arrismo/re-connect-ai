@@ -4,7 +4,7 @@
   # Command to build the frontend ONLY. Netlify handles the function build.
   command = "vite build"
   # Directory containing the static frontend build output.
-  publish = "dist"
+  publish = "dist/public"
   # Directory where Netlify looks for function source files.
   functions = "netlify/functions"
 
