@@ -69,7 +69,7 @@ export default function AppShell({ children }: AppShellProps) {
           <div className="h-10 w-10 bg-primary rounded-lg flex items-center justify-center text-white text-xl font-bold">
             <UsersRound size={20} />
           </div>
-          <h1 className="text-xl font-bold text-primary ml-3">SupportMatch</h1>
+          <h1 className="text-xl font-bold text-primary ml-3">ReConnect</h1>
         </div>
         
         <nav className="mt-8 flex-1">
@@ -122,7 +122,7 @@ export default function AppShell({ children }: AppShellProps) {
               <div className="h-10 w-10 bg-primary rounded-lg flex items-center justify-center text-white text-xl font-bold">
                 <UsersRound size={20} />
               </div>
-              <h1 className="text-xl font-bold text-primary ml-3">SupportMatch</h1>
+              <h1 className="text-xl font-bold text-primary ml-3">ReConnect</h1>
             </SheetTitle>
           </SheetHeader>
           

@@ -89,29 +89,6 @@ export default function Dashboard() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Main content area (left side) */}
           <div className="flex-1">
-            {/* Overview Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-              <StatsCard 
-                icon={<UsersRound className="text-lg" />} 
-                label="Active Matches" 
-                value={activeMatches.length} 
-                color="primary"
-              />
-              
-              <StatsCard 
-                icon={<CheckSquare className="text-lg" />} 
-                label="Challenges Completed" 
-                value={challengesData?.challenges?.filter((c: any) => c.status === 'completed').length || 0} 
-                color="secondary"
-              />
-              
-              <StatsCard 
-                icon={<CheckSquare className="text-lg" />} 
-                label="Your Points" 
-                value={user?.points || 0} 
-                color="accent"
-              />
-            </div>
             
             {/* Active Matches Section */}
             <section className="mb-8">

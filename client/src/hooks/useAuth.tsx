@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], userData);
       toast({
         title: "Registration successful",
-        description: `Welcome to SupportMatch, ${userData.displayName || userData.username}!`,
+        description: `Welcome to ReConnect, ${userData.displayName || userData.username}!`,
       });
     },
     onError: (error: Error) => {
