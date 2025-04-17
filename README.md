@@ -1,3 +1,4 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/c7242398-ae5c-4e17-b652-62ebd587996f/deploy-status)](https://app.netlify.com/sites/reconnect-ai/deploys)
 
 # ReConnect AI - Alcohol Recovery Community Platform
 
