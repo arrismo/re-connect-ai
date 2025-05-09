@@ -120,22 +120,22 @@ Generate 5 distinct research items.`;
 
   private getFallbackResearch(topic: string): ResearchItem[] {
     return [
-      {
-        title: "Cancer Support Group Research",
-        content: "Research shows that peer support groups for cancer patients improve quality of life, emotional well-being, and survivorship outcomes. Evidence-based approaches include psychoeducational groups, survivorship planning, and peer mentorship programs.",
-        source: "Journal of Cancer Survivorship (2023)"
-      }
-    ];
-          title: "Accountability Partnerships in Recovery",
-          content: "Peer-reviewed research shows that accountability partnerships significantly improve recovery outcomes. A structured accountability relationship creates a system of regular check-ins and mutual support that can detect early warning signs of relapse. Studies demonstrate that individuals with dedicated accountability partners maintain sobriety 37% longer than those without such support.",
-          source: "Journal of Substance Abuse Treatment (2021)"
-        },
-        {
-          title: "Mechanisms of Effective Accountability",
-          content: "Research identifies four key mechanisms that make accountability partnerships effective: (1) regular self-disclosure that builds honesty, (2) consistent monitoring that reinforces sobriety-supporting behaviors, (3) positive peer pressure that encourages healthy choices, and (4) reciprocal support that creates mutual investment in recovery outcomes.",
-          source: "Addiction Science & Clinical Practice (2020)"
-        }
-      ];
+  {
+    title: "Cancer Support Group Research",
+    content: "Research shows that peer support groups for cancer patients improve quality of life, emotional well-being, and survivorship outcomes. Evidence-based approaches include psychoeducational groups, survivorship planning, and peer mentorship programs.",
+    source: "Journal of Cancer Survivorship (2023)"
+  },
+  {
+    title: "Accountability Partnerships in Recovery",
+    content: "Peer-reviewed research shows that accountability partnerships significantly improve recovery outcomes. A structured accountability relationship creates a system of regular check-ins and mutual support that can detect early warning signs of relapse. Studies demonstrate that individuals with dedicated accountability partners maintain sobriety 37% longer than those without such support.",
+    source: "Journal of Substance Abuse Treatment (2021)"
+  },
+  {
+    title: "Mechanisms of Effective Accountability",
+    content: "Research identifies four key mechanisms that make accountability partnerships effective: (1) regular self-disclosure that builds honesty, (2) consistent monitoring that reinforces sobriety-supporting behaviors, (3) positive peer pressure that encourages healthy choices, and (4) reciprocal support that creates mutual investment in recovery outcomes.",
+    source: "Addiction Science & Clinical Practice (2020)"
+  }
+];
     } else {
       return [
         {
