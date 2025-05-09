@@ -119,22 +119,13 @@ Generate 5 distinct research items.`;
   }
 
   private getFallbackResearch(topic: string): ResearchItem[] {
-    if (topic.toLowerCase().includes('alcoholics anonymous')) {
-      return [
-        {
-          title: "AA Principles and Core Practices",
-          content: "Alcoholics Anonymous (AA) is founded on 12 steps and 12 traditions. The core principles include admitting powerlessness over alcohol, seeking help from a higher power, making amends for past wrongs, and helping other alcoholics. Research indicates these principles are effective because they address both psychological and social aspects of addiction recovery.",
-          source: "Journal of Substance Abuse Treatment (2018)"
-        },
-        {
-          title: "Efficacy of AA Participation",
-          content: "Multiple peer-reviewed studies, including a 2020 Cochrane review, found that AA participation leads to higher rates of abstinence compared to other treatments. The review of 27 studies with 10,565 participants showed that AA and Twelve-Step Facilitation (TSF) interventions significantly increased abstinence rates and reduced alcohol-related consequences.",
-          source: "Cochrane Database of Systematic Reviews (2020)"
-        }
-      ];
-    } else if (topic.toLowerCase().includes('accountability partners')) {
-      return [
-        {
+    return [
+      {
+        title: "Cancer Support Group Research",
+        content: "Research shows that peer support groups for cancer patients improve quality of life, emotional well-being, and survivorship outcomes. Evidence-based approaches include psychoeducational groups, survivorship planning, and peer mentorship programs.",
+        source: "Journal of Cancer Survivorship (2023)"
+      }
+    ];
           title: "Accountability Partnerships in Recovery",
           content: "Peer-reviewed research shows that accountability partnerships significantly improve recovery outcomes. A structured accountability relationship creates a system of regular check-ins and mutual support that can detect early warning signs of relapse. Studies demonstrate that individuals with dedicated accountability partners maintain sobriety 37% longer than those without such support.",
           source: "Journal of Substance Abuse Treatment (2021)"

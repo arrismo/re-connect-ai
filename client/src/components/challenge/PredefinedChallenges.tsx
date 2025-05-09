@@ -81,8 +81,8 @@ export function PredefinedChallenges({ onChallengeSelected }: PredefinedChalleng
             <p className="text-sm text-neutral-600">{challenge.description}</p>
             <div className="mt-2 flex items-center text-xs text-neutral-500">
               <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full mr-2">
-                {challenge.challengeType === 'days_sober' 
-                  ? 'Sobriety Tracking' 
+                {challenge.challengeType === 'cancer_support' 
+                  ? 'Cancer Support'
                   : challenge.challengeType === 'check_in_streak'
                   ? 'Daily Check-in'
                   : 'Standard Challenge'

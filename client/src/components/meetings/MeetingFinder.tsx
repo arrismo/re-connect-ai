@@ -262,10 +262,9 @@ const MeetingCard = ({ meeting, onClick }: { meeting: any, onClick: () => void }
   // Format the meeting type for display
   const getMeetingTypeLabel = (type: string) => {
     switch(type) {
-      case 'aa': return 'Alcoholics Anonymous';
-      case 'na': return 'Narcotics Anonymous';
-      case 'smart_recovery': return 'SMART Recovery';
-      case 'refuge_recovery': return 'Refuge Recovery';
+      case 'cancer_support': return 'Cancer Support Group';
+      case 'peer_support': return 'Peer Support';
+      case 'survivorship': return 'Survivorship Group';
       default: return type;
     }
   };

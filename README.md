@@ -2,7 +2,6 @@
 
 # ReConnect AI - Cancer Support Community Platform
 
-
 1. **Frontend**: React application with responsive design for both desktop and mobile experiences
 2. **Backend**: Express.js server managing authentication, business logic, and data persistence
 3. **Database**: PostgreSQL with Drizzle ORM for type-safe data operations

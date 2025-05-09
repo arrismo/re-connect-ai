@@ -164,10 +164,10 @@ const MeetingDetails: React.FC<MeetingDetailsProps> = ({ meetingId, onBack }) =>
                   <div className="flex items-center gap-2 mb-2">
                     <CardTitle className="text-xl">{meeting.name}</CardTitle>
                     <Badge variant="outline">
-                      {meeting.meetingType === 'aa' ? 'AA' : 
-                       meeting.meetingType === 'na' ? 'NA' : 
-                       meeting.meetingType === 'smart_recovery' ? 'SMART' : 
-                       meeting.meetingType === 'refuge_recovery' ? 'Refuge' : 
+                      {meeting.meetingType === 'cancer_support' ? 'Cancer Support Group' : 
+                       meeting.meetingType === 'peer_support' ? 'Peer Support' : 
+                       meeting.meetingType === 'survivorship' ? 'Survivorship Group' : 
+                       meeting.meetingType === 'other' ? 'Other' : 
                        meeting.meetingType}
                     </Badge>
                   </div>

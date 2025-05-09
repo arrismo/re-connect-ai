@@ -22,36 +22,21 @@ import { apiRequest } from "@/lib/queryClient";
 const SUGGESTED_INTERESTS = [
   "Anxiety Management",
   "Depression Support",
-  "Addiction Recovery",
-  "Stress Reduction",
-  "Healthy Habits",
   "Meditation",
   "Mindfulness",
   "Exercise",
   "Grief Support",
-  "PTSD Support",
-  "ADHD Management",
   "Sleep Improvement",
-  "Self-care",
   "Career Goals",
-  "Relationship Building"
+  "Relationship Building",
+  "Chemotherapy",
+  "Radiotherapy",
+  "Hormone Therapy",
+  "Immunotherapy",
+  "Targeted Therapy"
 ];
 
-// Personality characteristics
-const PERSONALITY_TRAITS = [
-  "Empathetic",
-  "Patient",
-  "Organized",
-  "Supportive",
-  "Motivated",
-  "Creative",
-  "Analytical",
-  "Resilient",
-  "Optimistic",
-  "Detail-oriented",
-  "Communicative",
-  "Focused"
-];
+
 
 export default function Register() {
   const auth = useAuth();
@@ -63,8 +48,8 @@ export default function Register() {
   });
   
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
-  const [customInterest, setCustomInterest] = useState("");
+  
+  
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -76,28 +61,13 @@ export default function Register() {
     if (selectedInterests.includes(interest)) {
       setSelectedInterests(selectedInterests.filter(i => i !== interest));
     } else {
-      if (selectedInterests.length < 5) {
-        setSelectedInterests([...selectedInterests, interest]);
-      }
+      setSelectedInterests([...selectedInterests, interest]);
     }
   };
 
-  const handleTraitSelect = (trait: string) => {
-    if (selectedTraits.includes(trait)) {
-      setSelectedTraits(selectedTraits.filter(t => t !== trait));
-    } else {
-      if (selectedTraits.length < 3) {
-        setSelectedTraits([...selectedTraits, trait]);
-      }
-    }
-  };
+  
 
-  const handleAddCustomInterest = () => {
-    if (customInterest && !selectedInterests.includes(customInterest) && selectedInterests.length < 5) {
-      setSelectedInterests([...selectedInterests, customInterest]);
-      setCustomInterest("");
-    }
-  };
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,7 +99,7 @@ export default function Register() {
     auth.registerMutation.mutate({
       ...registrationData,
       interests: selectedInterests,
-      characteristics: selectedTraits,
+      
     });
   };
 
@@ -189,8 +159,8 @@ export default function Register() {
                 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <Label htmlFor="interests">Interests (max 5)</Label>
-                    <p className="text-sm text-muted-foreground">{selectedInterests.length}/5 selected</p>
+                    <Label htmlFor="interests">Interests</Label>
+                    <p className="text-sm text-muted-foreground">{selectedInterests.length} selected</p>
                   </div>
                   <div className="border rounded-md p-3 space-y-3">
                     <div className="flex flex-wrap gap-2">
@@ -208,32 +178,19 @@ export default function Register() {
                       ))}
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      <Input
-                        placeholder="Add custom interest"
-                        value={customInterest}
-                        onChange={(e) => setCustomInterest(e.target.value)}
-                        disabled={selectedInterests.length >= 5 || auth.registerMutation.isPending}
-                        className="flex-1"
-                      />
-                      <Button 
-                        type="button" 
-                        size="sm" 
-                        variant="outline"
-                        onClick={handleAddCustomInterest}
-                        disabled={!customInterest || selectedInterests.length >= 5 || auth.registerMutation.isPending}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    
                     
                     <div>
                       <p className="text-sm mb-2">Suggested interests:</p>
                       <div className="flex flex-wrap gap-2">
                         {SUGGESTED_INTERESTS.map((interest) => (
-                          <Badge 
+                          <Badge
                             key={interest}
-                            className={`cursor-pointer ${selectedInterests.includes(interest) ? 'bg-primary' : 'bg-secondary hover:bg-secondary/80'}`}
+                            className={`cursor-pointer px-3 py-1 rounded transition-colors duration-150 ${
+                              selectedInterests.includes(interest)
+                                ? "bg-primary text-white"
+                                : "bg-gray-200 text-gray-800 border border-gray-300 hover:bg-gray-300"
+                            }`}
                             onClick={() => handleInterestSelect(interest)}
                           >
                             {interest}
@@ -247,43 +204,7 @@ export default function Register() {
                   )}
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label htmlFor="traits">Your Personality Traits (max 3)</Label>
-                    <p className="text-sm text-muted-foreground">{selectedTraits.length}/3 selected</p>
-                  </div>
-                  <div className="border rounded-md p-3 space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      {selectedTraits.map((trait) => (
-                        <Badge key={trait} variant="outline" className="text-sm py-1 px-2">
-                          {trait}
-                          <button 
-                            type="button"
-                            onClick={() => handleTraitSelect(trait)} 
-                            className="ml-1 text-primary hover:text-primary/80"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                    
-                    <div>
-                      <div className="flex flex-wrap gap-2">
-                        {PERSONALITY_TRAITS.map((trait) => (
-                          <Badge 
-                            key={trait}
-                            variant="outline"
-                            className={`cursor-pointer ${selectedTraits.includes(trait) ? 'bg-primary/10 border-primary/30' : 'hover:bg-secondary/50'}`}
-                            onClick={() => handleTraitSelect(trait)}
-                          >
-                            {trait}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                
                 
                 <div className="space-y-2">
                   <Label htmlFor="bio">About You (Optional)</Label>
