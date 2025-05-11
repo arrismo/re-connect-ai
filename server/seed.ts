@@ -3,31 +3,35 @@ import { hashPassword } from "./auth";
 
 /**
  * Seeds the database with initial data
- */
+ */console.log("Top of seed.ts");
+// Call the seeding function when this script is executed directly
+console.log("About to call seedDatabase()");
+seedDatabase().catch(e => {
+  console.error("Top-level error:", e);
+});
+
 export async function seedDatabase() {
   try {
     console.log("Seeding database with initial data...");
     
     // Seed interests
     const interests = [
-      { name: "Anxiety Management", category: "Mental Health" },
-      { name: "Depression Support", category: "Mental Health" },
-      { name: "Stress Reduction", category: "Mental Health" },
-      { name: "Fitness Goals", category: "Health" },
-      { name: "Weight Management", category: "Health" },
-      { name: "Nutrition", category: "Health" },
-      { name: "Career Development", category: "Professional" },
-      { name: "Time Management", category: "Professional" },
-      { name: "Work-Life Balance", category: "Professional" },
-      { name: "Personal Finance", category: "Life Skills" },
-      { name: "Relationship Issues", category: "Life Skills" },
-      { name: "Parenting Support", category: "Life Skills" },
-      { name: "Addiction Recovery", category: "Recovery" },
-      { name: "Grief Processing", category: "Recovery" },
-      { name: "Trauma Support", category: "Recovery" },
-      { name: "Creative Projects", category: "Personal Growth" },
-      { name: "Learning New Skills", category: "Personal Growth" },
-      { name: "Habit Building", category: "Personal Growth" }
+      { name: "Cancer Support", category: "Cancer" },
+      { name: "Cancer Survivorship", category: "Cancer" },
+      { name: "Managing Treatment Side Effects", category: "Cancer" },
+      { name: "Nutrition for Cancer Patients", category: "Health" },
+      { name: "Physical Activity During Cancer", category: "Health" },
+      { name: "Emotional Wellbeing (Cancer)", category: "Mental Health" },
+      { name: "Peer Support (Cancer)", category: "Cancer" },
+      { name: "Caregiver Support", category: "Cancer" },
+      { name: "Financial Resources (Cancer)", category: "Cancer" },
+      { name: "Mindfulness for Cancer", category: "Mental Health" },
+      { name: "Returning to Work After Cancer", category: "Professional" },
+      { name: "Body Image and Self-Esteem (Cancer)", category: "Personal Growth" },
+      { name: "Grief and Loss (Cancer)", category: "Cancer" },
+      { name: "Fertility and Cancer", category: "Health" },
+      { name: "Genetic Counseling", category: "Cancer" },
+      { name: "Managing Fatigue (Cancer)", category: "Health" }
     ];
     
     // Check existing interests to avoid duplicates
@@ -54,19 +58,19 @@ export async function seedDatabase() {
           displayName: "Test User",
           email: "test@example.com",
           bio: "Test account for development",
-          interests: ["Addiction Recovery", "Habit Building"],
-          goals: ["Stay sober", "Build healthy habits"],
-          experiences: ["Recovery journey", "Community support"],
+          interests: ["Cancer Support", "Peer Support (Cancer)", "Managing Treatment Side Effects"],
+          goals: ["Connect with other cancer survivors", "Learn to manage treatment side effects"],
+          experiences: ["Cancer survivorship", "Peer support group participant"],
         },
         {
           username: "testuser1",
           password: "password123",
           displayName: "Alex Johnson",
           email: "test1@example.com",
-          bio: "Looking for support with anxiety and career growth",
-          interests: ["Anxiety Management", "Career Development", "Time Management"],
-          goals: ["Reduce anxiety levels", "Get a promotion"],
-          experiences: ["5 years in IT industry", "Overcame public speaking fears"],
+          bio: "Looking for support with cancer diagnosis and treatment",
+          interests: ["Cancer Support", "Nutrition for Cancer Patients", "Physical Activity During Cancer"],
+          goals: ["Complete cancer treatment", "Improve physical health"],
+          experiences: ["Cancer diagnosis", "Oncology treatment"],
         },
         {
           username: "testuser2",
@@ -111,120 +115,6 @@ export async function seedDatabase() {
           });
           console.log(`Created test user: ${userData.username}`);
         }
-      }
-    }
-
-    // Get all meetings to check if we need to seed
-    const allMeetings = await storage.getAllMeetings();
-    if (allMeetings.length === 0) {
-      // Seed sample AA meetings with realistic coordinates for testing
-      const sampleMeetings = [
-        {
-          name: "Early Birds AA Group",
-          description: "Morning meeting focused on daily meditation and sharing",
-          meetingType: "aa",
-          address: "123 Recovery Way",
-          city: "New York",
-          state: "NY",
-          zipCode: "10001",
-          country: "USA",
-          latitude: 40.7128,
-          longitude: -74.0060,
-          dayOfWeek: 1, // Monday
-          startTime: "07:30",
-          endTime: "08:30",
-          isRecurring: true,
-          frequency: "weekly",
-          contactPhone: "212-555-1234",
-          contactEmail: "earlybirds@example.com",
-          website: "https://aarecovery.org/earlybirds"
-        },
-        {
-          name: "Serenity Now Group",
-          description: "Discussion-based meeting with focus on step work",
-          meetingType: "aa",
-          address: "456 Serenity Boulevard",
-          city: "New York",
-          state: "NY",
-          zipCode: "10002",
-          country: "USA",
-          latitude: 40.7282,
-          longitude: -73.9942,
-          dayOfWeek: 2, // Tuesday
-          startTime: "19:00",
-          endTime: "20:30",
-          isRecurring: true,
-          frequency: "weekly",
-          contactPhone: "212-555-5678",
-          contactEmail: "serenitynow@example.com",
-          website: "https://aarecovery.org/serenitynow"
-        },
-        {
-          name: "Gratitude AA Group",
-          description: "Beginner-friendly open discussion meeting",
-          meetingType: "aa",
-          address: "789 Thankful Street",
-          city: "Brooklyn",
-          state: "NY",
-          zipCode: "11201",
-          country: "USA",
-          latitude: 40.6958,
-          longitude: -73.9850,
-          dayOfWeek: 3, // Wednesday
-          startTime: "18:00",
-          endTime: "19:30",
-          isRecurring: true,
-          frequency: "weekly",
-          contactPhone: "718-555-1212",
-          contactEmail: "gratitude@example.com",
-          website: "https://aarecovery.org/gratitude"
-        },
-        {
-          name: "One Day at a Time Group",
-          description: "Speaker meeting with sharing time afterward",
-          meetingType: "aa",
-          address: "321 Present Avenue",
-          city: "Jersey City",
-          state: "NJ",
-          zipCode: "07302",
-          country: "USA",
-          latitude: 40.7216,
-          longitude: -74.0437,
-          dayOfWeek: 4, // Thursday
-          startTime: "19:30",
-          endTime: "21:00",
-          isRecurring: true,
-          frequency: "weekly",
-          contactPhone: "201-555-3434",
-          contactEmail: "onedayatatime@example.com",
-          website: "https://aarecovery.org/onedayatatime"
-        },
-        {
-          name: "Higher Power Fellowship",
-          description: "Spiritual focus with meditation and prayer",
-          meetingType: "aa",
-          address: "555 Faith Circle",
-          city: "Hoboken",
-          state: "NJ",
-          zipCode: "07030",
-          country: "USA",
-          latitude: 40.7439,
-          longitude: -74.0323,
-          dayOfWeek: 5, // Friday
-          startTime: "20:00",
-          endTime: "21:30",
-          isRecurring: true,
-          frequency: "weekly",
-          contactPhone: "201-555-8787",
-          contactEmail: "higherpower@example.com",
-          website: "https://aarecovery.org/higherpower"
-        }
-      ];
-
-      // Create sample meetings
-      for (const meetingData of sampleMeetings) {
-        await storage.createMeeting(meetingData);
-        console.log(`Created sample meeting: ${meetingData.name}`);
       }
     }
     

@@ -13,15 +13,13 @@ import {
   insertMessageSchema,
   // Achievement import removed
   insertInterestSchema,
-  insertMeetingSchema,
-  insertMeetingAttendeeSchema,
+
   insertGroupChallengeSchema,
   insertGroupChallengeParticipantSchema,
   User,
   Match,
   InsertChallengeProgress,
-  Meeting,
-  MeetingAttendee,
+
   GroupChallenge,
   GroupChallengeParticipant
 } from "@shared/schema";

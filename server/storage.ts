@@ -11,10 +11,7 @@ import {
   InsertMessage,
   Interest,
   InsertInterest,
-  Meeting,
-  InsertMeeting,
-  MeetingAttendee,
-  InsertMeetingAttendee,
+
   GroupChallenge,
   InsertGroupChallenge,
   GroupChallengeParticipant,
@@ -73,21 +70,7 @@ export interface IStorage {
   createInterest(interest: InsertInterest): Promise<Interest>;
   getAllInterests(): Promise<Interest[]>;
   
-  // Meeting related methods
-  getMeeting(id: number): Promise<Meeting | undefined>;
-  getAllMeetings(limit?: number, offset?: number): Promise<Meeting[]>;
-  getMeetingsByLocation(latitude: number, longitude: number, radiusInKm: number): Promise<Meeting[]>;
-  createMeeting(meeting: InsertMeeting): Promise<Meeting>;
-  updateMeeting(id: number, meeting: Partial<Meeting>): Promise<Meeting>;
-  deleteMeeting(id: number): Promise<boolean>;
-  
-  // Meeting Attendee related methods
-  getMeetingAttendees(meetingId: number): Promise<MeetingAttendee[]>;
-  getUserMeetingAttendance(userId: number): Promise<MeetingAttendee[]>;
-  attendMeeting(attendee: InsertMeetingAttendee): Promise<MeetingAttendee>;
-  updateAttendanceStatus(meetingId: number, userId: number, status: string): Promise<MeetingAttendee>;
-  checkInToMeeting(meetingId: number, userId: number): Promise<MeetingAttendee>;
-  
+
   // Group Challenge related methods
   getGroupChallenge(id: number): Promise<GroupChallenge | undefined>;
   getActiveGroupChallenges(limit?: number, offset?: number): Promise<GroupChallenge[]>;
@@ -135,8 +118,7 @@ export class MemStorage implements IStorage {
     this.messages = new Map();
     // achievements removed
     this.interests = new Map();
-    this.meetings = new Map();
-    this.meetingAttendees = new Map();
+
     this.groupChallenges = new Map();
     this.groupChallengeParticipants = new Map();
     
@@ -147,8 +129,7 @@ export class MemStorage implements IStorage {
     this.messageIdCounter = 1;
     // achievementIdCounter removed
     this.interestIdCounter = 1;
-    this.meetingIdCounter = 1;
-    this.meetingAttendeeIdCounter = 1;
+
     this.groupChallengeIdCounter = 1;
     this.groupChallengeParticipantIdCounter = 1;
   }
@@ -613,109 +594,11 @@ export class MemStorage implements IStorage {
   }
   
   // ==========================
-  // Meeting related methods
-  // ==========================
-  
-  async getMeeting(id: number): Promise<Meeting | undefined> {
-    return this.meetings.get(id);
-  }
-  
-  async getAllMeetings(limit?: number, offset?: number): Promise<Meeting[]> {
-    let meetings = Array.from(this.meetings.values());
-    
-    if (offset !== undefined) {
-      meetings = meetings.slice(offset);
-    }
-    
-    if (limit !== undefined) {
-      meetings = meetings.slice(0, limit);
-    }
-    
-    return meetings;
-  }
-  
-  async getMeetingsByLocation(latitude: number, longitude: number, radiusInKm: number): Promise<Meeting[]> {
-    // Calculate distance between two lat/lng points using the Haversine formula
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-      const R = 6371; // Radius of the Earth in km
-      const dLat = (lat2 - lat1) * (Math.PI / 180);
-      const dLon = (lon2 - lon1) * (Math.PI / 180);
-      const a = 
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    };
-    
-    return Array.from(this.meetings.values()).filter(meeting => {
-      if (!meeting.latitude || !meeting.longitude) return false;
-      
-      const distance = calculateDistance(
-        latitude,
-        longitude,
-        meeting.latitude,
-        meeting.longitude
-      );
-      
-      return distance <= radiusInKm;
-    });
-  }
-  
-  async createMeeting(meetingData: InsertMeeting): Promise<Meeting> {
-    const id = this.meetingIdCounter++;
-    const now = new Date();
-    // Ensure all properties match the Meeting schema, providing defaults
-    const meeting: Meeting = {
-      name: meetingData.name, // Required
-      meetingType: meetingData.meetingType, // Required
-      city: meetingData.city, // Required
-      country: meetingData.country, // Required
-      description: meetingData.description ?? null, // Default undefined to null
-      address: meetingData.address ?? null, // Default undefined to null
-      latitude: meetingData.latitude ?? null, // Default undefined to null
-      longitude: meetingData.longitude ?? null, // Default undefined to null
-      startTime: meetingData.startTime, // Required
-      endTime: meetingData.endTime, // Required
-      frequency: meetingData.frequency ?? null, 
-      createdBy: meetingData.createdBy ?? null, 
-      state: meetingData.state ?? null, 
-      id,
-      createdAt: now, // Assume schema allows Date
-      updatedAt: now // Assume schema allows Date
-    };
-    
-    this.meetings.set(id, meeting);
-    return meeting;
-  }
-  
-  async updateMeeting(id: number, meetingData: Partial<Meeting>): Promise<Meeting> {
-    const meeting = await this.getMeeting(id);
-    if (!meeting) {
-      throw new Error(`Meeting with id ${id} not found`);
-    }
-    
-    const updatedMeeting = {
-      ...meeting,
-      ...meetingData,
-      updatedAt: new Date()
-    };
-    
-    this.meetings.set(id, updatedMeeting);
-    return updatedMeeting;
-  }
-  
   async deleteMeeting(id: number): Promise<boolean> {
-    const meeting = await this.getMeeting(id);
-    if (!meeting) {
-      return false;
-    }
-    
     // Delete attendees first
     Array.from(this.meetingAttendees.keys())
       .filter(key => key.startsWith(`${id}-`))
       .forEach(key => this.meetingAttendees.delete(key));
-    
     // Then delete the meeting
     return this.meetings.delete(id);
   }

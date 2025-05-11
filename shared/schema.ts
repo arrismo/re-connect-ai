@@ -116,59 +116,6 @@ export const insertInterestSchema = createInsertSchema(interests).omit({
   id: true,
 });
 
-// ========== MEETINGS SCHEMA ==========
-export const meetings = pgTable("meetings", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  meetingType: text("meeting_type").notNull(), // aa, na, smart_recovery, other
-  address: text("address"),
-  city: text("city").notNull(),
-  state: text("state"),
-  zipCode: text("zip_code"),
-  country: text("country").notNull(),
-  latitude: doublePrecision("latitude"),
-  longitude: doublePrecision("longitude"),
-  dayOfWeek: integer("day_of_week"), // 0 (Sunday) to 6 (Saturday)
-  startTime: text("start_time"), // format: "HH:MM"
-  endTime: text("end_time"),   // format: "HH:MM"
-  isRecurring: boolean("is_recurring").default(true),
-  frequency: text("frequency").default("weekly"), // daily, weekly, monthly
-  contactPhone: text("contact_phone"),
-  contactEmail: text("contact_email"),
-  website: text("website"),
-  createdBy: integer("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertMeetingSchema = createInsertSchema(meetings).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-// ========== MEETING ATTENDEES SCHEMA ==========
-export const meetingAttendees = pgTable("meeting_attendees", {
-  id: serial("id").primaryKey(),
-  meetingId: integer("meeting_id").notNull().references(() => meetings.id),
-  userId: integer("user_id").notNull().references(() => users.id),
-  status: text("status").notNull().default("going"), // going, interested, not_going
-  checkedIn: boolean("checked_in").default(false),
-  checkInTime: timestamp("check_in_time"),
-  reminderSet: boolean("reminder_set").default(false),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => {
-  return {
-    uniqueUserMeeting: unique().on(table.meetingId, table.userId)
-  };
-});
-
-export const insertMeetingAttendeeSchema = createInsertSchema(meetingAttendees).omit({
-  id: true,
-  createdAt: true,
-});
 
 // ========== GROUP CHALLENGES SCHEMA ==========
 export const groupChallenges = pgTable("group_challenges", {
@@ -224,9 +171,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   receivedMatches: many(matches, { relationName: "user2_matches" }),
   challengeProgresses: many(challengeProgresses),
   messages: many(messages),
-  meetingAttendances: many(meetingAttendees),
+  
   groupChallengeParticipations: many(groupChallengeParticipants),
-  createdMeetings: many(meetings, { relationName: "meeting_creator" }),
+  
   createdGroupChallenges: many(groupChallenges, { relationName: "group_challenge_creator" })
 }));
 
@@ -275,27 +222,6 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   })
 }));
 
-// Meetings and Group Challenges Relations
-export const meetingsRelations = relations(meetings, ({ one, many }) => ({
-  creator: one(users, {
-    fields: [meetings.createdBy],
-    references: [users.id],
-    relationName: "meeting_creator"
-  }),
-  attendees: many(meetingAttendees)
-}));
-
-export const meetingAttendeesRelations = relations(meetingAttendees, ({ one }) => ({
-  meeting: one(meetings, {
-    fields: [meetingAttendees.meetingId],
-    references: [meetings.id]
-  }),
-  user: one(users, {
-    fields: [meetingAttendees.userId],
-    references: [users.id]
-  })
-}));
-
 export const groupChallengesRelations = relations(groupChallenges, ({ one, many }) => ({
   creator: one(users, {
     fields: [groupChallenges.createdBy],
@@ -334,12 +260,6 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type Interest = typeof interests.$inferSelect;
 export type InsertInterest = z.infer<typeof insertInterestSchema>;
-
-export type Meeting = typeof meetings.$inferSelect;
-export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
-
-export type MeetingAttendee = typeof meetingAttendees.$inferSelect;
-export type InsertMeetingAttendee = z.infer<typeof insertMeetingAttendeeSchema>;
 
 export type GroupChallenge = typeof groupChallenges.$inferSelect;
 export type InsertGroupChallenge = z.infer<typeof insertGroupChallengeSchema>;
