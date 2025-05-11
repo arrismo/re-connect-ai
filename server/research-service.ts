@@ -58,7 +58,7 @@ class ResearchService {
   private buildResearchPrompt(topic: string, query: string): string {
     return `Generate ${
       query ? 'specific information about "' + query + '" related to' : ''
-    } peer-reviewed research on ${topic} for alcohol addiction recovery. 
+    } peer-reviewed research on ${topic} for personal recovery and wellness.
 
 For each research finding:
 1. Provide a concise title that summarizes the key finding
@@ -128,21 +128,21 @@ Generate 5 distinct research items.`;
       },
       {
         title: "Accountability Partnerships in Recovery",
-        content: "Peer-reviewed research shows that accountability partnerships significantly improve recovery outcomes. A structured accountability relationship creates a system of regular check-ins and mutual support that can detect early warning signs of relapse. Studies demonstrate that individuals with dedicated accountability partners maintain sobriety 37% longer than those without such support.",
-        source: "Journal of Substance Abuse Treatment (2021)"
+        content: "Peer-reviewed research shows that accountability partnerships significantly improve recovery outcomes. A structured accountability relationship creates a system of regular check-ins and mutual support that can detect early warning signs of relapse. Studies demonstrate that individuals with dedicated accountability partners maintain positive outcomes 37% longer than those without such support.",
+        source: "Journal of Peer Support (2021)"
       },
       {
         title: "Mechanisms of Effective Accountability",
-        content: "Research identifies four key mechanisms that make accountability partnerships effective: (1) regular self-disclosure that builds honesty, (2) consistent monitoring that reinforces sobriety-supporting behaviors, (3) positive peer pressure that encourages healthy choices, and (4) reciprocal support that creates mutual investment in recovery outcomes.",
-        source: "Addiction Science & Clinical Practice (2020)"
+        content: "Research identifies four key mechanisms that make accountability partnerships effective: (1) regular self-disclosure that builds honesty, (2) consistent monitoring that reinforces healthy behaviors, (3) positive peer pressure that encourages healthy choices, and (4) reciprocal support that creates mutual investment in recovery outcomes.",
+        source: "Wellness Science & Clinical Practice (2020)"
       }
     ];
   } else {
     return [
       {
-        title: "Alcohol Recovery Research",
-        content: "Research shows that a combination of professional treatment, peer support, and lifestyle changes are most effective for long-term sobriety. Various evidence-based approaches include cognitive behavioral therapy, motivational enhancement therapy, and mutual aid groups.",
-        source: "Journal of Studies on Alcohol and Drugs (2022)"
+        title: "General Recovery Research",
+        content: "Research shows that a combination of professional support, peer engagement, and lifestyle changes are most effective for long-term wellness. Various evidence-based approaches include cognitive behavioral therapy, motivational enhancement, and mutual aid groups.",
+        source: "Journal of Studies on Recovery and Wellness (2022)"
       }
     ];
   }

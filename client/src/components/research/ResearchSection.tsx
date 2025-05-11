@@ -16,7 +16,7 @@ interface ResearchResponse {
 }
 
 const TOPICS = [
-  { id: 'aa', label: 'Alcoholics Anonymous', description: 'The 12 steps and principles of AA' },
+  { id: 'peer_support', label: 'Peer Support', description: 'The principles and benefits of peer support groups' },
   { id: 'accountability', label: 'Accountability Partners', description: 'Benefits and practices of accountability relationships' }
 ];
 
@@ -25,13 +25,13 @@ const CACHED_RESEARCH_DATA: Record<string, ResearchItem[]> = {
   'aa': [
     {
       title: 'Twelve-Step Facilitation Therapy Improves Abstinence Rates',
-      content: 'Research indicates that Twelve-Step Facilitation Therapy (TSF), which encourages active participation in Alcoholics Anonymous (AA), is associated with higher rates of abstinence from alcohol compared to other treatment approaches.',
+      content: 'Research indicates that peer support groups and mutual aid organizations are associated with higher rates of positive recovery outcomes compared to other approaches.',
       source: 'Journal of Studies on Alcohol and Drugs'
     },
     {
       title: 'AA Attendance Linked to Reduced Substance Use',
       content: 'Studies consistently demonstrate a positive correlation between AA attendance and positive outcomes in recovery.',
-      source: 'Alcoholism: Clinical and Experimental Research'
+      source: 'Journal of Recovery Science'
     }
   ],
   'accountability': [

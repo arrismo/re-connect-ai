@@ -251,7 +251,7 @@ export default function CreateChallengeForm({ matches, onSubmit, isSubmitting }:
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-center text-xs mt-4">
             <div className="border rounded p-2 bg-white">
               <div className="font-medium text-primary mb-1">Sobriety Tracking</div>
-              <div>Track days without alcohol and celebrate milestones</div>
+              <div>Track days of positive habits and celebrate milestones</div>
             </div>
             <div className="border rounded p-2 bg-white">
               <div className="font-medium text-primary mb-1">Daily Check-ins</div>

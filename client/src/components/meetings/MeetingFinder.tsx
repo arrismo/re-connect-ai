@@ -174,7 +174,7 @@ const MeetingFinder: React.FC<MeetingFinderProps> = ({ onSelectMeeting }) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="aa">Alcoholics Anonymous</SelectItem>
+                  
                   <SelectItem value="na">Narcotics Anonymous</SelectItem>
                   <SelectItem value="smart_recovery">SMART Recovery</SelectItem>
                   <SelectItem value="refuge_recovery">Refuge Recovery</SelectItem>

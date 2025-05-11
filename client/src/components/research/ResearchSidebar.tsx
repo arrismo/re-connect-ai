@@ -22,7 +22,7 @@ interface ResearchSidebarProps {
 }
 
 const TOPICS = [
-  { id: 'aa', label: 'Alcoholics Anonymous', description: 'The 12 steps and principles of AA' },
+  { id: 'peer_support', label: 'Peer Support', description: 'The principles and benefits of peer support groups' },
   { id: 'accountability', label: 'Accountability Partners', description: 'Benefits and practices of accountability relationships' }
 ];
 

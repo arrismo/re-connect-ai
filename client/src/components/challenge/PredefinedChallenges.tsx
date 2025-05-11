@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 
-// These are predefined alcohol recovery challenges
+// These are predefined recovery challenges
 const PREDEFINED_CHALLENGES = [
   {
     title: "Sobriety Tracking",
@@ -18,13 +18,13 @@ const PREDEFINED_CHALLENGES = [
   },
   {
     title: "Trigger Identification & Management",
-    description: "Work together to identify personal triggers for alcohol cravings and develop healthy coping strategies. Document and share your progress daily.",
+    description: "Work together to identify personal triggers for unhealthy habits and develop healthy coping strategies. Document and share your progress daily.",
     challengeType: "generic",
     totalSteps: 5
   },
   {
     title: "Sober Activities Discovery",
-    description: "Discover and engage in five new activities that are enjoyable without alcohol. Share your experiences and feedback with your accountability partner.",
+    description: "Discover and engage in five new activities that are enjoyable and promote wellness. Share your experiences and feedback with your accountability partner.",
     challengeType: "generic",
     totalSteps: 5
   },
@@ -36,7 +36,7 @@ const PREDEFINED_CHALLENGES = [
   },
   {
     title: "Recovery Reading Journey",
-    description: "Read recovery literature together and discuss insights. Set weekly goals to read specific chapters or articles about alcohol addiction recovery.",
+    description: "Read recovery literature together and discuss insights. Set weekly goals to read specific chapters or articles about wellness and recovery.",
     challengeType: "generic",
     totalSteps: 4
   }

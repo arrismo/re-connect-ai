@@ -82,9 +82,9 @@ export function AIChallengeGenerator({ matchId, onChallengeSelected }: AIChallen
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Alcohol Recovery Challenge Generator</DialogTitle>
+            <DialogTitle>Recovery Challenge Generator</DialogTitle>
             <DialogDescription>
-              Our AI will generate personalized alcohol addiction recovery challenges for you and your accountability partner.
+              Our AI will generate personalized recovery and wellness challenges for you and your accountability partner.
             </DialogDescription>
           </DialogHeader>
 
@@ -145,11 +145,11 @@ export function AIChallengeGenerator({ matchId, onChallengeSelected }: AIChallen
               </div>
             ) : (
               <div className="space-y-6 text-center p-4">
-                <p>Click the button below to generate AI-powered alcohol recovery challenges for you and your accountability partner.</p>
+                <p>Click the button below to generate AI-powered recovery challenges for you and your accountability partner.</p>
                 <div className="text-sm text-neutral-600 mb-4">
                   The AI will suggest challenges based on your profiles and shared interests. Choose from:
                   <ul className="mt-2 list-disc text-left pl-6">
-                    <li><span className="font-medium">Sobriety Tracking:</span> Track your days without alcohol</li>
+                    <li><span className="font-medium">Progress Tracking:</span> Track your days of positive habits</li>
                     <li><span className="font-medium">Daily Check-in:</span> Regular accountability communication</li>
                     <li><span className="font-medium">Standard Challenge:</span> Step-by-step recovery activities</li>
                   </ul>
