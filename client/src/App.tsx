@@ -8,7 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Matches from "@/pages/matches";
 import Challenges from "@/pages/challenges";
 import Messages from "@/pages/messages";
-import MeetingsPage from "@/pages/meetings";
+
 import GroupChallengePage from "@/pages/group-challenges";
 // Achievements import removed
 import Settings from "@/pages/settings";
@@ -57,12 +57,7 @@ function Router() {
         </AppShell>
       )} />
       
-      <ProtectedRoute path="/meetings" component={() => (
-        <AppShell>
-          <MeetingsPage />
-        </AppShell>
-      )} />
-      
+
       <ProtectedRoute path="/group-challenges" component={() => (
         <AppShell>
           <GroupChallengePage />
