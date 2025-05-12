@@ -229,7 +229,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (interests.length > 0) {
             potentialMatches = potentialMatches.filter(u => {
               const userInterests = u.interests || [];
-              return interests.some(interest => userInterests.includes(interest));
+              return interests.some(interest =>
+                userInterests.some(ui => ui.trim().toLowerCase() === interest.trim().toLowerCase())
+              );
             });
             
             console.log(`After interest filtering: ${potentialMatches.length} matches`);

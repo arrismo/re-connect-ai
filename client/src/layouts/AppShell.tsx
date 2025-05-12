@@ -25,7 +25,7 @@ const navItems = [
   { icon: UsersRound, label: "Matches", href: "/matches" },
   { icon: CheckSquare, label: "Challenges", href: "/challenges", badge: false },
   { icon: Users, label: "Group Challenges", href: "/group-challenges" },
-  { icon: MapPin, label: "Meetings", href: "/meetings" },
+
   { icon: MessageSquare, label: "Messages", href: "/messages" },
   { icon: Settings, label: "Settings", href: "/settings" }
 ];
