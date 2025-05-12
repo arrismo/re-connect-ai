@@ -145,4 +145,10 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // Export the configured app instance AND the initializer
-export { app, initializeServices }; 
+export { app, initializeServices };
+
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});

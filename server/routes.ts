@@ -227,11 +227,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Manually filter by interests if specified
           if (interests.length > 0) {
+            console.log("Interests from frontend:", interests);
+            potentialMatches.forEach(u => {
+              console.log(`User ${u.id} interests:`, u.interests);
+            });
             potentialMatches = potentialMatches.filter(u => {
               const userInterests = u.interests || [];
-              return interests.some(interest =>
+              const matchFound = interests.some(interest =>
                 userInterests.some(ui => ui.trim().toLowerCase() === interest.trim().toLowerCase())
               );
+              if (matchFound) {
+                console.log(`User ${u.id} matched on interests:`, userInterests);
+              }
+              return matchFound;
             });
             
             console.log(`After interest filtering: ${potentialMatches.length} matches`);
